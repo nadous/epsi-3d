@@ -22,10 +22,13 @@
 
     <script src="../../three.js-master/build/three.js"></script>
     <script src="../../three.js-master/examples/js/controls/OrbitControls.js"></script>
-
+    
     <script src="../../Physijs/physi.js"></script>
 
     <script type="text/javascript">
+        Physijs.scripts.worker = '../../Physijs/physijs_worker.js';
+        Physijs.scripts.ammo = './../Physijs/examples/js/ammo.js';
+
         var renderer, scene, camera, mesh, board;
         var clock = new THREE.Clock();
         var walltexture, walltexture2;
@@ -33,9 +36,6 @@
         init();
 
         function init() {
-            Physijs.scripts.ammo = 'JS/ammo.js';
-            Physijs.scripts.worker = 'physijs_worker.js';
-
             // on initialise le moteur de rendu
             renderer = new THREE.WebGLRenderer({
                 antialias: true
