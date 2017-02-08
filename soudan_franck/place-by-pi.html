@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title> Blender import </title>
+    <title> Place by π </title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no">
     <style>
@@ -34,6 +34,7 @@
         var container, stats;
         var scene, camera, renderer, controls;
         var icosphere;
+        var angle = 0;
 
         document.addEventListener('DOMContentLoaded', function() {
             init();
@@ -71,16 +72,19 @@
             container.appendChild(stats.dom);
 
             var loader = new THREE.OBJLoader();
-            
+
             loader.load('assets/icosphere.obj', function(obj) {
                 var material = new THREE.MeshBasicMaterial({
                     color: 0xffffff
-                    shading:
                 });
                 var texture = THREE.ImageUtils.loadTexture("assets/icosphere_texture.png");
                 material.map = texture;
-                obj.children[0].material = material;
-                scene.add(obj);
+
+                icosphere = obj.children[0];
+                icosphere.scale.set(.5, .5, .5);
+                icosphere.material = material;
+
+                scene.add(icosphere);
             });
 
             window.addEventListener('resize', on_window_resize);
@@ -91,12 +95,15 @@
         function render() {
             requestAnimationFrame(render);
 
-            // cube.position.setX(Math.sin(j) * oscillationFactor);
-            // cube.rotation.x = Math.cos(i) * Math.PI * .1;
-            // cube.rotation.y = Math.cos(i) * Math.PI * .1;
-            //
-            // i += speed;
-            // j += speed * .5;
+            // avant de modifier l'icosphere, on va s'assurer que l'.obj est chargé
+            if (icosphere !== undefined) {
+                var px = Math.cos(angle) * 1.5;
+                var py = Math.sin(angle) * 1.5;
+                angle += .01;
+
+                icosphere.position.setX(px);
+                icosphere.position.setY(py);
+            }
 
             controls.update();
             stats.update();
