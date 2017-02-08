@@ -12,7 +12,8 @@
     "babel-core": "^5.4.3",
     "es6-module-loader": "^0.16.6",
     "systemjs": "^0.16.11",
-    "topojson": "^1.6.19"
+    "topojson": "^1.6.19",
+	"papaparse": "^4.1.4"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

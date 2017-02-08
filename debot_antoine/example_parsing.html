@@ -22,16 +22,17 @@
       System.config({
         baseURL: '/',
         map: {
-          d3: 'node_modules/d3/d3',
+          /*d3: 'node_modules/d3/d3',
           THREE: 'node_modules/three/three',
           topojson: 'node_modules/topojson/build/topojson',
-          SubUnit: 'node_modules/src/index',
-		  PapaParse: 'node_modules/papaparse/papaparse'
+          SubUnit: 'node_modules/src/index',*/
+		  //papaparse: 'node_modules/papaparse/papaparse'
+		  
         },
         transpiler: 'babel'
       });
 
-      System.import('js/main');
+      System.import('js/main_parsing');
   </script>
   </body>
 </html>

@@ -17,10 +17,8 @@ d3.json('data/world.json', function (err, data) {
   var segments = 155; // number of vertices. Higher = better mouse accuracy
 
   // Setup cache for country textures
-  console.log("tatata");
   var countries = topojson.feature(data, data.objects.countries);
   var geo = geodecoder(countries.features);
-  console.log("TOTOTO");
   var textureCache = memoize(function (cntryID, color) {
     var country = geo.find(cntryID);
     return mapTexture(country, color);
