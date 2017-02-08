@@ -6,3 +6,4 @@
 3. Ajouter tous vos fichiers `git add --all` et faire un initial commit `git commit -am "initial commit"` ;
 4. Téléverser les modifications : `git push` ;
 5. Par la suite, identifier les fichiers modifiés : `git status` et n'ajouter que ces derniers `git add lefichier.html` ;
+6. Pour que son dossier local reflète les dernières modifications: `git pull`;
