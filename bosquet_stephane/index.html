@@ -30,12 +30,13 @@
     <script>
         var container, stats;
         var scene, camera, renderer, controls;
+		
 		var player; // the player
 		var ball; // the ball
-		var collidableMeshList = []; // the mesh that ball can collide with
-		var clock = new THREE.Clock();
 		
-		var speed = new THREE.Vector2(0,-0.05); // ball speed
+		var collidableMeshList = []; // the mesh that ball can collide with
+		
+		var ballMovement = new THREE.Vector2(0,-0.05); // ball speed and movement
 
         document.addEventListener('DOMContentLoaded', function() {
             init();
@@ -73,6 +74,31 @@
 
             stats = new Stats();
             container.appendChild(stats.dom);
+			
+			// WALLS
+			
+			var wallGeometry = new THREE.BoxGeometry(1, 7, .5);
+			var wallMaterial = new THREE.MeshBasicMaterial({
+                        color: 0xffffff
+                    });
+					
+			leftWall = new THREE.Mesh(wallGeometry, wallMaterial);
+			leftWall.position.set(-5, 0, 0);
+			leftWall.name = "wall"; // usefull during collisions
+			
+			scene.add(leftWall);
+			collidableMeshList.push(leftWall);
+			
+			rightWall = new THREE.Mesh(wallGeometry, wallMaterial);
+			rightWall.position.set(5, 0, 0);
+			rightWall.name = "wall"; // usefull during collisions
+			
+			scene.add(rightWall);
+			collidableMeshList.push(rightWall);
+					
+					
+			/*var rightWall
+			var upperWall*/
 
 			// BRICKS
             for (var x = -2; x <= 2; x++) {
@@ -111,8 +137,6 @@
 
             window.addEventListener('resize', on_window_resize);
 			document.addEventListener( 'keydown', onKeyDown, false ); // listen to keyboard inputs
-
-            //render();
         }
 		
 		function animate()
@@ -130,6 +154,9 @@
             renderer.render(scene, camera);
         }
 		
+		/*
+		* Handle objects on each frame
+		*/
 		function update(){
 			//controls.update();
             stats.update();
@@ -147,9 +174,11 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 		
+		/*
+		* Detect user inputs
+		*/
 		function onKeyDown ( event ) {
-			//var delta = clock.getDelta();
-			var moveDistance = 0.1;
+			var moveDistance = 0.1; // player speed
 			
 			switch ( event.keyCode ) 
 			{	
@@ -168,11 +197,17 @@
 			}
 		}
 		
+		/*
+		* Move the ball into the playable area
+		*/
 		function ballAnimation() {				
-			ball.position.x += speed.x;
-			ball.position.y += speed.y;
+			ball.position.x += ballMovement.x;
+			ball.position.y += ballMovement.y;
 		}
 		
+		/*
+		* Function to handle collisions
+		*/
 		function detectCollision() {
 			var originPoint = ball.position.clone();
 			for (var vertexIndex = 0; vertexIndex < ball.geometry.vertices.length; vertexIndex++)
@@ -185,15 +220,20 @@
 				var collisionResults = ray.intersectObjects( collidableMeshList );
 				if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) 
 				{						
-					var objectCollided = collisionResults[0].object;
+					var objectCollided = collisionResults[0].object; // the collided object
 					
 					console.log("collision with [" + objectCollided.name + "]");
 					console.log(objectCollided);
 					
-					speed.y = speed.y * -1;
-					//speed.x = Math.random() * 0.1;
+					ballMovement.y = ballMovement.y * -1; // invert direction
+					ballMovement.x = ballMovement.x - objectCollided.position.x; // put some angle to the ball movement
 					
-					return;				
+					if(objectCollided.name == "brick"){ // if collided object is a brick
+						scene.remove(objectCollided); // remove the brick from scene
+						collidableMeshList.splice(collidableMeshList.indexOf(objectCollided),1); // remove brick from collidable objects
+					}
+					
+					return; // if one of the vertex has collided, we know for sure that a collision is happening.		
 				}
 			}
 		}
