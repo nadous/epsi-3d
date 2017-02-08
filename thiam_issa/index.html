@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="../../three.js-master/build/three.js"></script>
+    <script src="../../three.js-master/examples/js/Detector.js"></script>
+
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #f0f0f0;
+            margin: 0px;
+            overflow: hidden;
+        }
+
+        #bob_containerDiv {
+            display: inline-block;
+        }
+    </style>
+
+    <script>
+        var lastPoint = null;
+        var container;
+        var camera, scene, projector, renderer;
+        var particleMaterial;
+        var objects = [];
+        var isRotating = false;
+        var z = 0;
+        var speed = .1;
+        var depthFactor = 250;
+
+
+        function get3dPointZAxis(event) {
+            var vector = new THREE.Vector3(
+                (event.clientX / window.innerWidth) * 2 - 1,
+                -(event.clientY / window.innerHeight) * 2 + 1,
+                .5);
+
+            z += speed;
+
+            vector.unproject(camera);
+            var dir = vector.sub(camera.position).normalize();
+            var distance = -camera.position.z / dir.z;
+            var pos = camera.position.clone().add(dir.multiplyScalar(distance));
+            pos.setZ(Math.sin(z) * depthFactor);
+            return pos;
+        }
+
+        function startDraw(event) {
+            lastPoint = get3dPointZAxis(event);
+        }
+
+        function stopDraw(event) {
+            lastPoint = null;
+        }
+
+        function doDraw(event) {
+            if (lastPoint) {
+                var pos = get3dPointZAxis(event);
+                var material = new THREE.LineBasicMaterial({
+                    color: 0x0000ff,
+                    linewidth: 5 // Pour voir l'épaisseur de la ligne
+                });
+                var geometry = new THREE.Geometry();
+                if (Math.abs(lastPoint.x - pos.x) < 500 && Math.abs(lastPoint.y - pos.y) < 500 && Math.abs(lastPoint.z - pos.z) < 500) {
+                    geometry.vertices.push(lastPoint);
+                    geometry.vertices.push(pos);
+
+                    var line = new THREE.Line(geometry, material);
+                    scene.add(line);
+                    lastPoint = pos;
+                } else {
+                    console.debug(lastPoint.x.toString() + ':' + lastPoint.y.toString() + ':' + lastPoint.z.toString() + ':' +
+                        pos.x.toString() + ':' + pos.y.toString() + ':' + pos.z.toString());
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            init();
+        });
+
+        function init() {
+
+            container = document.createElement('div');
+            document.body.appendChild(container);
+
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 10000);
+            camera.position.set(0, 300, 500);
+
+            scene = new THREE.Scene();
+
+            if (Detector.webgl)
+                renderer = new THREE.WebGLRenderer({
+                    antialias: true
+                });
+            else
+                renderer = new THREE.CanvasRenderer();
+
+            renderer.setClearColor(0xf0f0f0);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            container.appendChild(renderer.domElement);
+
+
+            document.addEventListener('mousedown', startDraw, false);
+            document.addEventListener('mouseup', stopDraw, false);
+            document.addEventListener('mousemove', doDraw, false);
+
+            //
+
+            window.addEventListener('resize', onWindowResize, false);
+
+
+            animate();
+        }
+
+        function onWindowResize() {
+
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+        }
+
+        // function onDocumentMouseDown(event) {
+        //
+        //     event.preventDefault();
+        //
+        //     var vector = new THREE.Vector3((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1, 0.5);
+        //     projector.unprojectVector(vector, camera);
+        //
+        //     var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
+        //
+        //     var intersects = raycaster.intersectObjects(objects);
+        //
+        //     if (intersects.length > 0) {
+        //
+        //         intersects[0].object.material.color.setHex(Math.random() * 0xffffff);
+        //
+        //         var particle = new THREE.Sprite(particleMaterial);
+        //         particle.position = intersects[0].point;
+        //         particle.scale.x = particle.scale.y = 16;
+        //         scene.add(particle);
+        //
+        //     }
+        //
+        // }
+
+        function animate() {
+
+            requestAnimationFrame(animate);
+
+            render();
+
+
+        }
+
+        var radius = 1000;
+        var theta = 90;
+
+        function render() {
+            if (isRotating) {
+                theta += 0.1;
+
+                camera.position.x = radius * Math.sin(THREE.Math.degToRad(theta));
+                camera.position.y = radius * Math.sin(THREE.Math.degToRad(theta));
+                camera.position.z = radius * Math.cos(THREE.Math.degToRad(theta));
+                camera.lookAt(scene.position);
+            }
+            renderer.render(scene, camera);
+
+        }
+    </script>
+</head>
+
+<body>
+
+    <div style='display:block;position:absolute'>
+        <!--<button onclick='addShapes();return false;'>Shapes</button>-->
+        <button onclick='isRotating=true;background=green;return false;'>Rotate</button>
+    </div>
+</body>
+
+</html>
