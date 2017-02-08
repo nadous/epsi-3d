@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Interactive Maps</title>
+    <title>Interactive Maps - WebGL Demo</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
     <link rel="stylesheet" type="text/css" href="css/style.css">
   </head>
   <body>
     <div id="info">
-      <h3>Interactive Maps</h3>
+      <h3>Interactive Maps - WebGL Demo</h3>
       <div id="msg">Mouseover a country...</div>
       <div>Click to rotate the globe</div>
     </div>
@@ -25,13 +25,12 @@
           d3: 'node_modules/d3/d3',
           THREE: 'node_modules/three/three',
           topojson: 'node_modules/topojson/build/topojson',
-          SubUnit: 'node_modules/src/index'
-		  //papaparse: 'node_modules/papaparse/papaparse'
+          SubUnit: 'node_modules/src/index'		  
         },
         transpiler: 'babel'
       });
 
-      System.import('js/main_parsing');
+      System.import('js/main_globe');
   </script>
   </body>
 </html>
