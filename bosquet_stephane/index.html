@@ -26,20 +26,20 @@
     <script src="../../three.js-master/examples/js/Detector.js"></script>
     <script src="../../three.js-master/examples/js/libs/stats.min.js"></script>
     <script src="../../three.js-master/examples/js/controls/OrbitControls.js"></script>
-
+	
     <script>
         var container, stats;
         var scene, camera, renderer, controls;
 		var player; // the player
 		var ball; // the ball
-
-        var px = 0,
-            i = 0,
-            j = 0;
-        var speed = .1;
+		var collidableMeshList = []; // the mesh that ball can collide with
+		var clock = new THREE.Clock();
+		
+		var speed = new THREE.Vector2(0,-0.05); // ball speed
 
         document.addEventListener('DOMContentLoaded', function() {
             init();
+			animate();
         });
 
         function init() {
@@ -57,10 +57,10 @@
             var ambientLight = new THREE.AmbientLight(0x404040);
             scene.add(ambientLight)
 
-            controls = new THREE.OrbitControls(camera);
+            /*controls = new THREE.OrbitControls(camera);
             controls.enableDamping = true;
             controls.dampingFactor = .1;
-            controls.rotateSpeed = .1;
+            controls.rotateSpeed = .1;*/
 
             renderer = new THREE.WebGLRenderer({
                 antialias: true,
@@ -68,7 +68,7 @@
 			
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            // renderer.setClearColor(0xffffff);
+           // renderer.setClearColor(0xffffff);
             container.appendChild(renderer.domElement);
 
             stats = new Stats();
@@ -84,18 +84,12 @@
 					
                     cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
                     cube.position.set(x, y, 0);
-
+					cube.name = "brick"; // usefull during collisions
+					
                     scene.add(cube);
+					collidableMeshList.push(cube);
                 }
             }
-			
-			// BALL		
-			var geometry = new THREE.SphereGeometry( 0.2, 32, 32 );
-			var material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
-			
-			ball = new THREE.Mesh( geometry, material ); // init ball
-			ball.position.set(0,0,0);
-			scene.add(ball);
 			
 			// PLAYER		
 			var geometry = new THREE.BoxGeometry( 2, .2, .5);
@@ -103,24 +97,48 @@
 			
 			player = new THREE.Mesh( geometry, material ); // init player
 			player.position.set(0,-3,0);
+			player.name = "player";  // usefull during collisions
 			scene.add(player);
+			collidableMeshList.push(player);
+			
+			// BALL		
+			var geometry = new THREE.SphereGeometry( 0.2, 20, 20 );
+			var material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
+			
+			ball = new THREE.Mesh( geometry, material ); // init ball
+			ball.position.set(0,0,0);
+			scene.add(ball);
 
             window.addEventListener('resize', on_window_resize);
 			document.addEventListener( 'keydown', onKeyDown, false ); // listen to keyboard inputs
 
-            render();
+            //render();
         }
+		
+		function animate()
+		{
+			requestAnimationFrame(animate);
+			render();
+			update();
+		}
 
-        function render() {
-            requestAnimationFrame(render);
-
-            i += speed;
-            j += speed * .5;
-
-            controls.update();
-            stats.update();
+        function render()
+		{
+            /*i += speed;
+            j += speed * .5;*/
+			
             renderer.render(scene, camera);
         }
+		
+		function update(){
+			//controls.update();
+            stats.update();
+			
+			detectCollision(); // detect all collisions in game
+			ballAnimation(); // ball movements according to speed, direction
+			
+			render();
+		}
 
         function on_window_resize() {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -129,28 +147,54 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 		
-		function onKeyDown ( event ) 
-		{
-			var moveDistance = 1;
+		function onKeyDown ( event ) {
+			//var delta = clock.getDelta();
+			var moveDistance = 0.1;
 			
 			switch ( event.keyCode ) 
 			{	
 				case 37: // left arrow
-				console.log("left");
 				player.position.x -= moveDistance;
 				break;
 				case 38: // up arrow
-				console.log("up");
 				player.position.y += moveDistance;
 				break;
 				case 39: // right arrow
-				console.log("right");
 				player.position.x += moveDistance;
 				break;
 				case 40: // down arrow
-				console.log("down");
 				player.position.y -= moveDistance;
 				break;
+			}
+		}
+		
+		function ballAnimation() {				
+			ball.position.x += speed.x;
+			ball.position.y += speed.y;
+		}
+		
+		function detectCollision() {
+			var originPoint = ball.position.clone();
+			for (var vertexIndex = 0; vertexIndex < ball.geometry.vertices.length; vertexIndex++)
+			{		
+				var localVertex = ball.geometry.vertices[vertexIndex].clone();
+				var globalVertex = localVertex.applyMatrix4( ball.matrix );
+				var directionVector = globalVertex.sub( ball.position );
+				
+				var ray = new THREE.Raycaster( originPoint, directionVector.clone().normalize() );
+				var collisionResults = ray.intersectObjects( collidableMeshList );
+				if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) 
+				{						
+					var objectCollided = collisionResults[0].object;
+					
+					console.log("collision with [" + objectCollided.name + "]");
+					console.log(objectCollided);
+					
+					speed.y = speed.y * -1;
+					//speed.x = Math.random() * 0.1;
+					
+					return;				
+				}
 			}
 		}
     </script>
