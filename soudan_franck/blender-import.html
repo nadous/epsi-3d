@@ -72,16 +72,15 @@
 
             var loader = new THREE.OBJLoader();
 
-            // load a resource
             loader.load('assets/icosphere.obj', function(obj) {
+                var material = new THREE.MeshBasicMaterial({
+                    color: 0xffffff
+                });
+                var texture = THREE.ImageUtils.loadTexture("assets/icosphere_texture.png");
+                material.map = texture;
+                obj.children[0].material = material;
                 scene.add(obj);
-                // var material = new THREE.MeshBasicMaterial({
-                //     color: 0xffffff
-                // });
-                // var object = new THREE.Mesh(geometry, material);
-                // scene.add(object);
             });
-            // .setTexturePath('assets/icosphere_texture.png');
 
             window.addEventListener('resize', on_window_resize);
 
