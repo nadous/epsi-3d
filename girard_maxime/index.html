@@ -6,7 +6,18 @@
     <meta name="viewport" content="width=device-width, user-scalable=no">
     <style>
         body {
-            margin: 0;
+            background-color: #193c6d;
+            filter: progid: DXImageTransform.Microsoft.gradient(gradientType=1, startColorstr='#003073', endColorstr='#029797');
+            background-image: url(//img.alicdn.com/tps/TB1d.u8MXXXXXXuXFXXXXXXXXXX-1900-790.jpg);
+            background-size: 100%;
+            background-image: -webkit-gradient(linear, 0 0, 100% 100%, color-stop(0, #003073), color-stop(100%, #029797));
+            background-image: -webkit-linear-gradient(135deg, #003073, #029797);
+            background-image: -moz-linear-gradient(45deg, #003073, #029797);
+            background-image: -ms-linear-gradient(45deg, #003073 0, #029797 100%);
+            background-image: -o-linear-gradient(45deg, #003073, #029797);
+            background-image: linear-gradient(135deg, #003073, #029797);
+            text-align: center;
+            margin: 0px;
             overflow: hidden;
         }
         canvas {
@@ -15,15 +26,15 @@
         }
     </style>
 
-    <script src="three.js/build/three.js"></script>
+    <script src="js/three.js"></script>
     <script src="js/datGui.js"></script>
     <script src="js/jquery.js"></script>
 
-    <script src="three.js/examples/js/Detector.js"></script>
-    <script src="three.js/examples/js/libs/stats.min.js"></script>
-    <script src="three.js/examples/js/renderers/Projector.js"></script>
-    <script src="three.js/examples/js/controls/OrbitControls.js"></script>
-    <script src="three.js/examples/js/renderers/CanvasRenderer.js"></script>
+    <script src="js/Detector.js"></script>
+    <script src="js/stats.min.js"></script>
+    <script src="js/Projector.js"></script>
+    <script src="js/OrbitControls.js"></script>
+    <script src="js/CanvasRenderer.js"></script>
 <script>
         var container, stats;
 
@@ -39,6 +50,7 @@
 
         var windowHalfX = window.innerWidth / 2;
         var windowHalfY = window.innerHeight / 2;
+        var numberOfGroup = 0;
 
         var loader = new THREE.FontLoader();
         loader.load( 'fonts/exo.json', function ( font ) {
@@ -47,36 +59,45 @@
             animate();
 
         } );
+        
 
         function init( font ) {
 
             var FizzyText = function() {
-                this.word = 'Hello';
-                this.category = "Synonym";
+                this.word = 'Bad';
+                this.category = "Synonyms";
+                this.generate = function(){
+                    createWords(font, this.word, this.category);
+                };
+                this.reset = function(){
+                    destroyWords();
+                };
             };
 
             var settings = new FizzyText();
             var gui = new dat.GUI();
 
-            gui.add(settings, 'word').onFinishChange(function(){
-                createWords(font, settings.word);
-            })
-            gui.add(settings, 'category', [ 'Synonym', 'Homonym', 'Rhym' ] );
+            gui.add(settings, 'word');
+            gui.add(settings, 'category', [ 'Synonyms', 'Antonyms', 'Rhymes', 'Suggestions', 'SoundLike' ] );
+
+            gui.add(settings, 'generate');
+
+            gui.add(settings, 'reset');
 
             container = document.createElement( 'div' );
             document.body.appendChild( container );
-
-            camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
-            camera.position.set( 260, 95, 510 );
 
             scene = new THREE.Scene();
 
             var ambientLight = new THREE.AmbientLight(0x404040);
             scene.add(ambientLight);
 
-            createWords(font, settings.word);
+            createWords(font, settings.word, settings.category);
+
+            camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
+            camera.position.set( 0, 100, 400 );
             
-            renderer = new THREE.CanvasRenderer();
+            renderer = new THREE.CanvasRenderer({ alpha: true });
             renderer.setPixelRatio( window.devicePixelRatio );
             renderer.setSize( window.innerWidth, window.innerHeight );
             container.appendChild( renderer.domElement );
@@ -95,12 +116,12 @@
         }
 
 
-        function createWords(font, word){
+        function createWords(font, word, category){
             var firstWordGeometry = new THREE.TextGeometry( word, {
                 font: font,
-                size: 14,
-                height: 5, // épaisseur 
-                curveSegments: 2
+                size: 20,
+                height: 3,
+                curveSegments: 1,
             });
 
             firstWordGeometry.computeBoundingBox();
@@ -111,47 +132,93 @@
                 new THREE.MeshBasicMaterial( { color: 0x000000, overdraw: 0.5 } )
             ] );
 
-            if(group === undefined) {
-                group = new THREE.Group();
-                group.name = "wordsGroup1";
+            if(numberOfGroup >= 3) {
+                numberOfGroup = 0;
+                destroyWords();
             }
-            else {
-                scene.remove(group);
-                group = new THREE.Group();
-                group.name = "wordsGroup1";
-            }
+            group = new THREE.Group();
+            numberOfGroup++;
+            
+            var firstMesh = new THREE.Mesh( firstWordGeometry, material );
 
-            var mesh = new THREE.Mesh( firstWordGeometry, material );
+            firstMesh.position.x = 0;
+            firstMesh.position.y = 0 - (numberOfGroup * 100);
+            firstMesh.position.z = 0 + 5;
 
-            mesh.position.x = centerOffset - 2.5;
-            mesh.position.y = 100 + 6;
-            mesh.position.z = 0 + 5;
+            firstMesh.rotation.x = 0;
+            firstMesh.rotation.y = Math.PI * 2;
 
-            mesh.rotation.x = 0;
-            mesh.rotation.y = Math.PI * 2;
+            if(category == "Synonyms")
+                url = "https://api.datamuse.com/words?max=10&rel_syn=";
+            else if(category == "Antonyms")
+                url = "https://api.datamuse.com/words?max=10&rel_ant=";
+            else if(category == "Suggestions")
+                url = "https://api.datamuse.com/sug?max=10&s=";
+            else if(category == "SoundLike")
+                url = "https://api.datamuse.com/words?max=10&sl=";
+            else   
+                url = "https://api.datamuse.com/words?max=10&rel_rhy=";
 
-            group.add( mesh );
+            group.add( firstMesh );
             $.ajax({
-                url: 'https://api.datamuse.com/words?max=10&rel_syn=' + word,
+                url: url + word,
                 type: 'GET', 
                 dataType: 'json',
                 success: function(data) { 
                     for(var i = 0; i < data.length; i++)
                     {
+                        if(data[i].score >= 10 &&  data[i].score < 150)
+                            var fontSize = 7;
+                        else if(data[i].score >= 150 &&  data[i].score < 500)
+                            var fontSize = 9;                        
+                        else if(data[i].score >= 500 &&  data[i].score <= 1000)
+                            var fontSize = 10;
+                        else if(data[i].score >= 1000 &&  data[i].score <= 2000)
+                            var fontSize = 11;
+                        else if(data[i].score > 2000)
+                            var fontSize = 12;
+
                         var otherWordsGeometry = new THREE.TextGeometry( data[i].word, {
                             font: font,
-                            size: 12,
+                            size: fontSize,
                             height: 5, // épaisseur 
-                            curveSegments: 2
+                            curveSegments: 1
                         });
 
                         otherWordsGeometry.computeBoundingBox();
 
-                        var px = Math.cos(Math.PI * 0) * 1.5;
-                        var py = Math.sin(Math.PI * 0) * 1.5;
+                        var mesh = new THREE.Mesh( otherWordsGeometry, material );
+                        
+                        if(i == 0){
+                            mesh.position.x = firstMesh.position.x + (word.length * 20);
+                            mesh.position.y = firstMesh.position.y + 5 * (i + 1);
+                            mesh.position.z = firstMesh.position.z;   
 
-                        mesh.position.setX(px);
-                        mesh.position.setY(py);
+                            var startPoint = new THREE.Vector3(firstMesh.position.x, firstMesh.position.y, firstMesh.position.z);
+                            var endPoint   = new THREE.Vector3(mesh.position.x, mesh.position.y, mesh.position.z);
+                            var direction = new THREE.Vector3().subVectors(endPoint, startPoint).normalize();
+                            var arrow = new THREE.ArrowHelper(direction, startPoint, startPoint.distanceTo(endPoint), 0xCC0000 );
+                            scene.add(arrow);
+
+                        }
+                        else{
+                            mesh.position.x = previousMesh.position.x + (previousWord.length * 10);   
+                            mesh.position.y = firstMesh.position.y + 5 * (i + 1);
+                            mesh.position.z = firstMesh.position.z;     
+
+                            var lineGeometry = new THREE.Geometry();
+                            lineGeometry.vertices.push( new THREE.Vector3(previousMesh.position.x, previousMesh.position.y, previousMesh.position.z), new THREE.Vector3(mesh.position.x, mesh.position.y, mesh.position.z) );
+                            lineGeometry.computeLineDistances();
+                            var lineMaterial = new THREE.LineBasicMaterial( { color: 0xCCCCCC } );
+                            var line = new THREE.Line( lineGeometry, lineMaterial );
+                            scene.add(line);             
+                        }
+
+                        mesh.rotation.x = 0;
+                        mesh.rotation.y = Math.PI * 2;
+
+                        var previousMesh = mesh;
+                        var previousWord = data[i].word;
 
                         group.add( mesh );
                     }
@@ -163,6 +230,7 @@
 
             scene.add( group );
         }
+
         function onWindowResize() {
 
             windowHalfX = window.innerWidth / 2;
@@ -173,6 +241,14 @@
 
             renderer.setSize( window.innerWidth, window.innerHeight );
 
+        }
+
+        function destroyWords(){
+            scene.children.slice().forEach(function(obj) { 
+                console.log(scene.children);
+                if(obj.type == "Group" || obj.type == "Line" || obj.type == "Object3D")
+                    scene.remove(obj); 
+            })
         }
 
         function animate() {
