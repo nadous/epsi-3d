@@ -1,6 +1,8 @@
+<!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <title> sbosquet </title>
+    <title> Blender import </title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no">
     <style>
@@ -15,7 +17,7 @@
         }
     </style>
 
-<!--  Structure de travail:
+    <!--  Structure de travail:
       home
           |> three.js-master
           |> epsi-3d
@@ -26,17 +28,12 @@
     <script src="../../three.js-master/examples/js/Detector.js"></script>
     <script src="../../three.js-master/examples/js/libs/stats.min.js"></script>
     <script src="../../three.js-master/examples/js/controls/OrbitControls.js"></script>
+    <script src="../../three.js-master/examples/js/loaders/OBJLoader.js"></script>
 
     <script>
         var container, stats;
         var scene, camera, renderer, controls;
-		var player; // the player
-		var ball; // the ball
-
-        var px = 0,
-            i = 0,
-            j = 0;
-        var speed = .1;
+        var icosphere;
 
         document.addEventListener('DOMContentLoaded', function() {
             init();
@@ -51,11 +48,11 @@
             scene = new THREE.Scene();
             scene.fog = new THREE.FogExp2(0x000000, 0.075);
 
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-            camera.position.set(0, 0, 10);
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 100);
+            camera.position.set(0, 0, 5);
 
             var ambientLight = new THREE.AmbientLight(0x404040);
-            scene.add(ambientLight)
+            scene.add(ambientLight);
 
             controls = new THREE.OrbitControls(camera);
             controls.enableDamping = true;
@@ -63,50 +60,30 @@
             controls.rotateSpeed = .1;
 
             renderer = new THREE.WebGLRenderer({
-                antialias: true,
+                antialias: true
             });
-			
+
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            // renderer.setClearColor(0xffffff);
             container.appendChild(renderer.domElement);
 
             stats = new Stats();
             container.appendChild(stats.dom);
 
-			// BRICKS
-            for (var x = -2; x <= 2; x++) {
-                for (var y = 2; y < 4; y++) {
-                    var cubeGeometry = new THREE.BoxGeometry(.7, .3, .5);
-                    var cubeMaterial = new THREE.MeshBasicMaterial({
-                        color: 0xffffff
-                    });
-					
-                    cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-                    cube.position.set(x, y, 0);
-
-                    scene.add(cube);
-                }
-            }
-			
-			// BALL		
-			var geometry = new THREE.SphereGeometry( 0.2, 32, 32 );
-			var material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
-			
-			ball = new THREE.Mesh( geometry, material ); // init ball
-			ball.position.set(0,0,0);
-			scene.add(ball);
-			
-			// PLAYER		
-			var geometry = new THREE.BoxGeometry( 2, .2, .5);
-			var material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
-			
-			player = new THREE.Mesh( geometry, material ); // init player
-			player.position.set(0,-3,0);
-			scene.add(player);
+            var loader = new THREE.OBJLoader();
+            
+            loader.load('assets/icosphere.obj', function(obj) {
+                var material = new THREE.MeshBasicMaterial({
+                    color: 0xffffff
+                    shading:
+                });
+                var texture = THREE.ImageUtils.loadTexture("assets/icosphere_texture.png");
+                material.map = texture;
+                obj.children[0].material = material;
+                scene.add(obj);
+            });
 
             window.addEventListener('resize', on_window_resize);
-			document.addEventListener( 'keydown', onKeyDown, false ); // listen to keyboard inputs
 
             render();
         }
@@ -114,8 +91,12 @@
         function render() {
             requestAnimationFrame(render);
 
-            i += speed;
-            j += speed * .5;
+            // cube.position.setX(Math.sin(j) * oscillationFactor);
+            // cube.rotation.x = Math.cos(i) * Math.PI * .1;
+            // cube.rotation.y = Math.cos(i) * Math.PI * .1;
+            //
+            // i += speed;
+            // j += speed * .5;
 
             controls.update();
             stats.update();
@@ -128,31 +109,6 @@
 
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
-		
-		function onKeyDown ( event ) 
-		{
-			var moveDistance = 1;
-			
-			switch ( event.keyCode ) 
-			{	
-				case 37: // left arrow
-				console.log("left");
-				player.position.x -= moveDistance;
-				break;
-				case 38: // up arrow
-				console.log("up");
-				player.position.y += moveDistance;
-				break;
-				case 39: // right arrow
-				console.log("right");
-				player.position.x += moveDistance;
-				break;
-				case 40: // down arrow
-				console.log("down");
-				player.position.y -= moveDistance;
-				break;
-			}
-		}
     </script>
 </head>
 
