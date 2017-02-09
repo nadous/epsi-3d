@@ -23,18 +23,15 @@
         var lastPoint = null;
         var container;
         var camera, scene, projector, renderer;
-        var particleMaterial;
-        var objects = [];
+        var lines = [];
         var isRotating = false;
         var z = 0;
         var speed = .1;
         var depthFactor = 250;
 
-
         function get3dPointZAxis(event) {
             var vector = new THREE.Vector3(
-                (event.clientX / window.innerWidth) * 2 - 1,
-                -(event.clientY / window.innerHeight) * 2 + 1,
+                (event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1,
                 .5);
 
             z += speed;
@@ -68,6 +65,8 @@
                     geometry.vertices.push(pos);
 
                     var line = new THREE.Line(geometry, material);
+                    lines.push(line);
+
                     scene.add(line);
                     lastPoint = pos;
                 } else {
@@ -80,6 +79,55 @@
         document.addEventListener('DOMContentLoaded', function() {
             init();
         });
+
+        document.addEventListener('keypress', function(e) {
+            var key = e.which || e.keyCode;
+            if (key === 13) { // 13 is enter
+                commit_lines();
+            }
+        });
+
+        function commit_lines() {
+            isRotating = false;
+
+            for (var i = 0; i < lines.length; i++) {
+                var vertices = lines[i].geometry.vertices;
+                var cylinder = get_cylinder(vertices[0], vertices[1]);
+
+                scene.add(cylinder);
+                console.log(cylinder.position);
+            }
+        }
+
+        function get_cylinder(v1, v2) {
+            // edge from X to Y
+            var direction = new THREE.Vector3().subVectors(v1, v2);
+            var arrow = new THREE.ArrowHelper(direction.clone().normalize(), v1, 100, 0xff0000);
+
+            // cylinder: radiusAtTop, radiusAtBottom,
+            //     height, radiusSegments, heightSegments
+            var edgeGeometry = new THREE.CylinderGeometry(20, 20, direction.length(), 12, 4);
+
+            var edge = new THREE.Mesh(
+                edgeGeometry,
+                new THREE.MeshBasicMaterial({
+                    color: 0x00ffff,
+                    wireframe: true
+                }));
+
+            var position = new THREE.Vector3().addVectors(v1, direction.multiplyScalar(0.5));
+
+            // trouve comment appliquer correctement la rotation
+            edge.rotation = arrow.rotation.clone();
+            edge.position.set(position.x, position.y, position.z);
+
+            scene.add(arrow);
+
+            // console.log(new THREE.Vector3().add(v1));
+            // edge.position = new THREE.Vector3().addVectors(v1, direction.multiplyScalar(0.5));
+
+            return edge;
+        }
 
         function init() {
 
@@ -168,6 +216,7 @@
                 camera.position.x = radius * Math.sin(THREE.Math.degToRad(theta));
                 camera.position.y = radius * Math.sin(THREE.Math.degToRad(theta));
                 camera.position.z = radius * Math.cos(THREE.Math.degToRad(theta));
+
                 camera.lookAt(scene.position);
             }
             renderer.render(scene, camera);
