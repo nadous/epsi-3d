@@ -39,7 +39,7 @@ export function mapTexture(geojson, color) {
   texture = new THREE.Texture(canvas.node());
   texture.needsUpdate = true;
 
-  canvas.remove();
+  // canvas.remove();
 
   return texture;
 }
