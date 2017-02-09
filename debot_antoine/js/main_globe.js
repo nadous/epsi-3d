@@ -3,6 +3,7 @@ import { setEvents } from './common/setEvents';
 import { convertToXYZ, getEventCenter, geodecoder } from './common/geoHelpers';
 import { mapTexture } from './common/mapTexture';
 import { getTween, memoize } from './common/utils';
+import * as CC from './common/colorConverter';
 
 /* Attention la méthode d'import est différentes ici,
  * probleme de librairie -> http://stackoverflow.com/questions/41291142/topojson-uncaught-typeerror-cannot-read-property-feature-of-undefined
@@ -172,24 +173,32 @@ function doStuff(parsedCountryData, minEmissionCntry, maxEmissionCntry) {
 				//50 à 25%, 255,77,77
 				//25 à "0"%, 255,179,179
 				var valueCountry = gParsedCountryData[country.code];
-				var percentCountry = valueCountry *100 / gMax;
-				console.log ("country.code overlaied: ",country.code);
-				console.log ("valur d'emission: ",valueCountry);
-				console.log ("% d'emission: ",percentCountry);
+				var percentCountry = valueCountry * 100 / gMax;
 
-				if (percentCountry>75)
+				// console.log ("country.code overlaied: ",country.code);
+				// console.log ("valur d'emission: ",valueCountry);
+				// console.log ("% d'emission: ",percentCountry);
+				// console.log (`value: ${valueCountry / gMax}`);
+				var co2_factor = valueCountry / gMax;
+				// console.log(`255,0,0 to HSV: ${CC.default._RGBtoHSV(CC.RGB(255,0,0))}`);
+				map = textureCache(country.code, rgbToHex(co2_factor,co2_factor,co2_factor));
+				if (co2_factor>.75)
 				{
-					map = textureCache(country.code, rgbToHex(179,0,0));
+					map = textureCache(country.code, rgbToHex(12,0,0));
 				}
-				else if (percentCountry>50){
-					map = textureCache(country.code, rgbToHex(255,0,0));
+				else if (co2_factor>.5){
+					map = textureCache(country.code, rgbToHex((valueCountry / gMax)*255,0,0));
 				}
-				else if(percentCountry>25){
-					map = textureCache(country.code, rgbToHex(255,77,77));
+				else if(co2_factor>.25){
+					map = textureCache(country.code, rgbToHex((valueCountry / gMax)*255,0,0));
+
 				}
 				else
 				{
-					map = textureCache(country.code, rgbToHex(255,179,179));
+					var green = map_number(co2_factor, 0, .25, 255, 125);
+					// console.log(`green: ${green}`);
+
+					map = textureCache(country.code, rgbToHex(0,Math.round(green),0));
 				}
 			  //map = textureCache(country.code, '#647089'); //old color '#CDC290'
 			  material = new THREE.MeshPhongMaterial({map: map, transparent: true});
@@ -210,6 +219,10 @@ function doStuff(parsedCountryData, minEmissionCntry, maxEmissionCntry) {
 	function animate() {
 	  requestAnimationFrame(animate);
 	  renderer.render(scene, camera);
+	}
+
+	function map_number(n, in_min, in_max, out_min, out_max) {
+			return (n - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 	}
 	animate();
 }
