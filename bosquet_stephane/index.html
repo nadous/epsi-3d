@@ -1,4 +1,5 @@
 <html lang="en">
+
 <head>
     <title> sbosquet </title>
     <meta charset="utf-8">
@@ -15,7 +16,7 @@
         }
     </style>
 
-<!--  Structure de travail:
+    <!--  Structure de travail:
       home
           |> three.js-master
           |> epsi-3d
@@ -26,24 +27,23 @@
     <script src="../../three.js-master/examples/js/Detector.js"></script>
     <script src="../../three.js-master/examples/js/libs/stats.min.js"></script>
     <script src="../../three.js-master/examples/js/controls/OrbitControls.js"></script>
-	
 	<script src="../../three.js-master/examples/js/libs/dat.gui.min.js"></script>
 	
     <script>
         var container, stats;
         var scene, camera, renderer, controls;
-		
-		var player; // the player
-		var ball; // the ball
-		
-		var collidableMeshList = []; // the mesh that ball can collide with
-		
-		var ballMovement = new THREE.Vector2(0,-0.05); // ball speed and movement
-		var BALL_MAX_SPEED = .25; // the ball can't go faster than
+
+        var player; // the player
+        var ball; // the ball
+
+        var collidableMeshList = []; // the mesh that ball can collide with
+
+        var ballMovement = new THREE.Vector2(Math.random() * .05, -0.05); // ball speed and movement
+        var BALL_MAX_SPEED = .25; // the ball can't go faster than
 
         document.addEventListener('DOMContentLoaded', function() {
             init();
-			animate();
+            animate();
         });
 
         function init() {
@@ -58,7 +58,7 @@
             camera.position.set(0, 0, 15);
 
             var ambientLight = new THREE.AmbientLight(0x404040);
-            scene.add(ambientLight)
+            scene.add(ambientLight);
 
             /*controls = new THREE.OrbitControls(camera);
             controls.enableDamping = true;
@@ -68,10 +68,10 @@
             renderer = new THREE.WebGLRenderer({
                 antialias: true,
             });
-			
+
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-           // renderer.setClearColor(0xffffff);
+            // renderer.setClearColor(0xffffff);
             container.appendChild(renderer.domElement);
 
             stats = new Stats();
@@ -125,13 +125,14 @@
                     var cubeMaterial = new THREE.MeshBasicMaterial({
                         color: 0xffffff
                     });
-					
+
                     cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
                     cube.position.set(x, y, 0);
-					cube.name = "brick"; // usefull during collisions
+
+					cube.name = "brick";
 					
                     scene.add(cube);
-					collidableMeshList.push(cube);
+                    collidableMeshList.push(cube);
                 }
             }
 			
@@ -183,34 +184,32 @@
 			gui.add(controls, "pause"); // pause function
 			gui.add(controls, "resume"); // resume function
         }
-		
-		function animate()
-		{
-			requestAnimationFrame(animate);
-			render();
-			update();
-		}
 
-        function render()
-		{
+        function animate() {
+            requestAnimationFrame(animate);
+            render();
+            update();
+        }
+
+        function render() {
             /*i += speed;
             j += speed * .5;*/
-			
+
             renderer.render(scene, camera);
         }
-		
-		/*
-		* Handle objects on each frame
-		*/
-		function update(){
-			//controls.update();
+
+        /*
+         * Handle objects on each frame
+         */
+        function update() {
+            //controls.update();
             stats.update();
-			
-			detectCollision(); // detect all collisions in game
-			ballAnimation(); // ball movements according to speed, direction
-			
-			render();
-		}
+
+            detectCollision(); // detect all collisions in game
+            ballAnimation(); // ball movements according to speed, direction
+
+            render();
+        }
 
         function on_window_resize() {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -299,7 +298,6 @@
 						
 						if(ball.position.y < objectCollided.position.y)
 							ballMovement.y = ballMovement.y * -1; // invert direction
-						
 						
 						ballMovement.x = ballMovement.x * -1;
 						
