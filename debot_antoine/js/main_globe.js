@@ -24,6 +24,7 @@ import {
  */
 import * as topojson from 'topojson';
 import THREE from 'THREE';
+import OrbitControls from 'node_modules/three-orbit-controls/index';
 import d3 from 'd3';
 import Papa from "node_modules/papaparse/papaparse";
 
@@ -32,6 +33,7 @@ var gMin;
 var gMax;
 
 // utilisé pour regler la caméra
+var OB = OrbitControls(THREE);
 var controls;
 
 // Pour papaparse, il est nécéssaire de recharger manuellement la librairie -> https://github.com/mholt/PapaParse/issues/148
@@ -43,6 +45,7 @@ parseData("../../data/data_co2.csv", doStuff);
 
 // On parse les données et on récupère le taux d'emission min et max de l'ensemble des pays
 function parseData(url, callBack) {
+	// console.log(OB);
 	Papa.parse(url, {
 		delimiter: ",",
 		header: true,
@@ -89,8 +92,8 @@ function doStuff(parsedCountryData, minEmissionCntry, maxEmissionCntry) {
 	gMin = minEmissionCntry;
 	gMax = maxEmissionCntry;
 
-	//controls = new OrbitControls(camera, renderer.domElement);
-	controls.addEventListener('change', render);
+	controls = OB(camera, renderer.domElement);
+	// controls.addEventListener('change', render);
 	// Chargement de la carte avec les identifiants par pays. A voir à l'intérieur.
 	// On remarque qu'on définit des arcs de points pour les pays
 	// format: {"type":"MultiPolygon","arcs":[[[6,7,8,9]],[[10,11,12]]],"id":"Angola"}
@@ -239,7 +242,7 @@ function doStuff(parsedCountryData, minEmissionCntry, maxEmissionCntry) {
 
 	function animate() {
 		requestAnimationFrame(animate);
-		controls.update();
+		// controls.update();
 
 		renderer.render(scene, camera);
 	}

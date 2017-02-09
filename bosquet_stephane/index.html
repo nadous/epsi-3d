@@ -1,4 +1,5 @@
 <html lang="en">
+
 <head>
     <title> sbosquet </title>
     <meta charset="utf-8">
@@ -15,7 +16,7 @@
         }
     </style>
 
-<!--  Structure de travail:
+    <!--  Structure de travail:
       home
           |> three.js-master
           |> epsi-3d
@@ -26,22 +27,22 @@
     <script src="../../three.js-master/examples/js/Detector.js"></script>
     <script src="../../three.js-master/examples/js/libs/stats.min.js"></script>
     <script src="../../three.js-master/examples/js/controls/OrbitControls.js"></script>
-	
+
     <script>
         var container, stats;
         var scene, camera, renderer, controls;
-		
-		var player; // the player
-		var ball; // the ball
-		
-		var collidableMeshList = []; // the mesh that ball can collide with
-		
-		var ballMovement = new THREE.Vector2(0,-0.05); // ball speed and movement
-		var BALL_MAX_SPEED = .25; // the ball can't go faster than
+
+        var player; // the player
+        var ball; // the ball
+
+        var collidableMeshList = []; // the mesh that ball can collide with
+
+        var ballMovement = new THREE.Vector2(Math.random() * .05, -0.05); // ball speed and movement
+        var BALL_MAX_SPEED = .25; // the ball can't go faster than
 
         document.addEventListener('DOMContentLoaded', function() {
             init();
-			animate();
+            animate();
         });
 
         function init() {
@@ -57,7 +58,7 @@
             camera.position.set(0, 0, 10);
 
             var ambientLight = new THREE.AmbientLight(0x404040);
-            scene.add(ambientLight)
+            scene.add(ambientLight);
 
             /*controls = new THREE.OrbitControls(camera);
             controls.enableDamping = true;
@@ -67,123 +68,123 @@
             renderer = new THREE.WebGLRenderer({
                 antialias: true,
             });
-			
+
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-           // renderer.setClearColor(0xffffff);
+            // renderer.setClearColor(0xffffff);
             container.appendChild(renderer.domElement);
 
             stats = new Stats();
             container.appendChild(stats.dom);
-			
-			// LEFT AND RIGHT WALLS
-			
-			var wallGeometry = new THREE.BoxGeometry(.5, 8, .5);
-			var wallMaterial = new THREE.MeshBasicMaterial({
-                        color: 0xffffff
-                    });
-					
-			leftWall = new THREE.Mesh(wallGeometry, wallMaterial);
-			leftWall.position.set(-5, 0, 0);
-			leftWall.name = "leftRight"; // usefull during collisions
-			
-			scene.add(leftWall);
-			collidableMeshList.push(leftWall);
-			
-			rightWall = new THREE.Mesh(wallGeometry, wallMaterial);
-			rightWall.position.set(5, 0, 0);
-			rightWall.name = "leftRight"; // usefull during collisions
-			
-			scene.add(rightWall);
-			collidableMeshList.push(rightWall);
-					
-					
-			// TOP AND BOTTOW WALL
-			wallGeometry = new THREE.BoxGeometry(10, .5, .5);
-			wallMaterial = new THREE.MeshBasicMaterial({
-                        color: 0xffffff
-                    });
-					
-			topWall = new THREE.Mesh(wallGeometry, wallMaterial);
-			topWall.position.set(0, 4, 0);
-			topWall.name = "topBottomWall"; // usefull during collisions
-			
-			scene.add(topWall);
-			collidableMeshList.push(topWall);
-			
-			bottomWall = new THREE.Mesh(wallGeometry, wallMaterial);
-			bottomWall.position.set(0, -4, 0);
-			bottomWall.name = "topBottomWall"; // usefull during collisions
-			
-			scene.add(bottomWall);
-			collidableMeshList.push(bottomWall);
 
-			// BRICKS
+            // LEFT AND RIGHT WALLS
+
+            var wallGeometry = new THREE.BoxGeometry(.5, 8, .5);
+            var wallMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffffff
+            });
+
+            var leftWall = new THREE.Mesh(wallGeometry, wallMaterial);
+            leftWall.position.set(-5, 0, 0);
+            leftWall.name = "leftWall"; // usefull during collisions
+
+            scene.add(leftWall);
+            collidableMeshList.push(leftWall);
+
+            var rightWall = new THREE.Mesh(wallGeometry, wallMaterial);
+            rightWall.position.set(5, 0, 0);
+            rightWall.name = "rightWall"; // usefull during collisions
+
+            scene.add(rightWall);
+            collidableMeshList.push(rightWall);
+
+            // TOP AND BOTTOW WALL
+            var wallGeometry = new THREE.BoxGeometry(10, .5, .5);
+            var wallMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffffff
+            });
+
+            var topWall = new THREE.Mesh(wallGeometry, wallMaterial);
+            topWall.position.set(0, 4, 0);
+            topWall.name = "topWall"; // usefull during collisions
+
+            scene.add(topWall);
+            collidableMeshList.push(topWall);
+
+            var bottomWall = new THREE.Mesh(wallGeometry, wallMaterial);
+            bottomWall.position.set(0, -4, 0);
+            bottomWall.name = "bottomWall"; // usefull during collisions
+
+            scene.add(bottomWall);
+            collidableMeshList.push(bottomWall);
+
+            // BRICKS
             for (var x = -2; x <= 2; x++) {
                 for (var y = 2; y < 4; y++) {
                     var cubeGeometry = new THREE.BoxGeometry(.7, .3, .5);
                     var cubeMaterial = new THREE.MeshBasicMaterial({
                         color: 0xffffff
                     });
-					
+
                     cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
                     cube.position.set(x, y, 0);
-					cube.name = "brick"; // usefull during collisions
-					
+
                     scene.add(cube);
-					collidableMeshList.push(cube);
+                    collidableMeshList.push(cube);
                 }
             }
-			
-			// PLAYER		
-			var geometry = new THREE.BoxGeometry( 2, .5, .5);
-			var material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
-			
-			player = new THREE.Mesh( geometry, material ); // init player
-			player.position.set(0,-3,0);
-			player.name = "player";  // usefull during collisions
-			scene.add(player);
-			collidableMeshList.push(player);
-			
-			// BALL		
-			var geometry = new THREE.SphereGeometry( 0.2, 20, 20 );
-			var material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
-			
-			ball = new THREE.Mesh( geometry, material ); // init ball
-			ball.position.set(0,0,0);
-			scene.add(ball);
+
+            // PLAYER
+            var geometry = new THREE.BoxGeometry(3, .25, .25);
+            var material = new THREE.MeshBasicMaterial({
+                color: 0xffffff
+            });
+
+            player = new THREE.Mesh(geometry, material); // init player
+            player.position.set(0, -3, 0);
+            player.name = "player"; // usefull during collisions
+            scene.add(player);
+            collidableMeshList.push(player);
+
+            // BALL
+            var geometry = new THREE.SphereGeometry(0.2, 20, 20);
+            var material = new THREE.MeshBasicMaterial({
+                color: 0xffffff
+            });
+
+            ball = new THREE.Mesh(geometry, material); // init ball
+            ball.position.set(0, 0, 0);
+            scene.add(ball);
 
             window.addEventListener('resize', on_window_resize);
-			document.addEventListener( 'keydown', onKeyDown, false ); // listen to keyboard inputs
+            document.addEventListener('keydown', onKeyDown, false); // listen to keyboard inputs
         }
-		
-		function animate()
-		{
-			requestAnimationFrame(animate);
-			render();
-			update();
-		}
 
-        function render()
-		{
+        function animate() {
+            requestAnimationFrame(animate);
+            render();
+            update();
+        }
+
+        function render() {
             /*i += speed;
             j += speed * .5;*/
-			
+
             renderer.render(scene, camera);
         }
-		
-		/*
-		* Handle objects on each frame
-		*/
-		function update(){
-			//controls.update();
+
+        /*
+         * Handle objects on each frame
+         */
+        function update() {
+            //controls.update();
             stats.update();
-			
-			detectCollision(); // detect all collisions in game
-			ballAnimation(); // ball movements according to speed, direction
-			
-			render();
-		}
+
+            detectCollision(); // detect all collisions in game
+            ballAnimation(); // ball movements according to speed, direction
+
+            render();
+        }
 
         function on_window_resize() {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -191,109 +192,100 @@
 
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
-		
-		/*
-		* Detect user inputs
-		*/
-		function onKeyDown ( event ) {
-			var moveDistance = 0.2; // player speed
-			
-			switch ( event.keyCode ) 
-			{	
-				case 37: // left arrow
-				player.position.x -= moveDistance;
-				break;
-				case 38: // up arrow
-				player.position.y += moveDistance;
-				break;
-				case 39: // right arrow
-				player.position.x += moveDistance;
-				break;
-				case 40: // down arrow
-				player.position.y -= moveDistance;
-				break;
-			}
-		}
-		
-		/*
-		* Move the ball into the playable area
-		*/
-		function ballAnimation() {
-			if(Math.abs(ballMovement.x) > BALL_MAX_SPEED)
-				ballMovement.x = BALL_MAX_SPEED;
-			if(Math.abs(ballMovement.y) > BALL_MAX_SPEED)	
-				ballMovement.y = BALL_MAX_SPEED;
-			
-			//console.log("speed : " + Math.abs(ballMovement.x) + " ; " + Math.abs(ballMovement.y));
-			
-			ball.position.x += ballMovement.x;
-			ball.position.y += ballMovement.y;			
-		}
-		
-		/*
-		* Function to handle collisions
-		*/
-		function detectCollision() {
-			var originPoint = ball.position.clone();
-			for (var vertexIndex = 0; vertexIndex < ball.geometry.vertices.length; vertexIndex++)
-			{		
-				var localVertex = ball.geometry.vertices[vertexIndex].clone();
-				var globalVertex = localVertex.applyMatrix4( ball.matrix );
-				var directionVector = globalVertex.sub( ball.position );
-				
-				var ray = new THREE.Raycaster( originPoint, directionVector.clone().normalize() );
-				var collisionResults = ray.intersectObjects( collidableMeshList );
-				if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) 
-				{						
-					var objectCollided = collisionResults[0].object; // the collided object
-					
-					//console.log("collision with [" + objectCollided.name + "]"); // physics debug
-					//console.log(objectCollided);
-					
-					if(objectCollided.name == "player"){ // if collided object is player	
-						console.log("player collision");
-						
-						var barSize = new THREE.Vector2(objectCollided.geometry.parameters.width, objectCollided.geometry.parameters.height);
-						var xFactor = map_number(ball.position.x, 
-							objectCollided.position.x - barSize.x * 0.5,
-							objectCollided.position.x + barSize.x * 0.5,
-							1.5,-1.5
-							)
-						
-						console.log("width : " + objectCollided.geometry.parameters.width);
-						console.log("xFactor : " + xFactor);
-						
-						ballMovement.y *= -1;
-						
-						ballMovement.x *= xFactor;
-					}
-					
-					if(objectCollided.name == "leftRight"){ // if collided object is left or right wall
-						ballMovement.x = ballMovement.x * -1;
-					}
-					
-					if(objectCollided.name == "topBottomWall") // if collided object is top or bottow wall
-					{
-						ballMovement.y = ballMovement.y * -1
-					}
-					
-					if(objectCollided.name == "brick"){ // if collided object is a brick
-						ballMovement.y = ballMovement.y * -1; // invert direction
-						ballMovement.x = ballMovement.x * -1;
-						
-						scene.remove(objectCollided); // remove the brick from scene
-						collidableMeshList.splice(collidableMeshList.indexOf(objectCollided),1); // remove brick from collidable objects
-					}
-					
-					return; // if one of the vertex has collided, we know for sure that a collision is happening.		
-				}
-			}
-		}
-		
-		// utility
-		function map_number(n, in_min, in_max, out_min, out_max) {
-			return (n - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-		}
+
+        /*
+         * Detect user inputs
+         */
+        function onKeyDown(event) {
+            var moveDistance = 0.2; // player speed
+
+            switch (event.keyCode) {
+                case 37: // left arrow
+                    player.position.x -= moveDistance;
+                    break;
+                case 38: // up arrow
+                    player.position.y += moveDistance;
+                    break;
+                case 39: // right arrow
+                    player.position.x += moveDistance;
+                    break;
+                case 40: // down arrow
+                    player.position.y -= moveDistance;
+                    break;
+            }
+        }
+
+        /*
+         * Move the ball into the playable area
+         */
+        function ballAnimation() {
+            if (Math.abs(ballMovement.x) > BALL_MAX_SPEED)
+                ballMovement.x *= .5;
+            if (Math.abs(ballMovement.y) > BALL_MAX_SPEED)
+                ballMovement.y *= .5;
+
+            //console.log("speed : " + Math.abs(ballMovement.x) + " ; " + Math.abs(ballMovement.y));
+
+            ball.position.x += ballMovement.x;
+            ball.position.y += ballMovement.y;
+        }
+
+        /*
+         * Function to handle collisions
+         */
+        function detectCollision() {
+            var originPoint = ball.position.clone();
+            for (var vertexIndex = 0; vertexIndex < ball.geometry.vertices.length; vertexIndex++) {
+                var localVertex = ball.geometry.vertices[vertexIndex].clone();
+                var globalVertex = localVertex.applyMatrix4(ball.matrix);
+                var directionVector = globalVertex.sub(ball.position);
+
+                var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
+                var collisionResults = ray.intersectObjects(collidableMeshList);
+                if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
+                    var objectCollided = collisionResults[0].object; // the collided object
+
+                    //console.log("collision with [" + objectCollided.name + "]"); // physics debug
+                    //console.log(objectCollided);
+
+                    if (objectCollided.name == "player") { // if collided object is player
+                        console.log("player collision");
+                        var barSize = new THREE.Vector2(objectCollided.geometry.parameters.width, objectCollided.geometry.parameters.height);
+
+                        var xFactor = map_number(ball.position.x,
+                            objectCollided.position.x - barSize.x * 0.5,
+                            objectCollided.position.x + barSize.x * 0.5, -.05, .05);
+
+                        ballMovement.y *= -1;
+                        ballMovement.x += xFactor;
+                    }
+
+                    if (objectCollided.name == "rightWall" || objectCollided.name == "leftWall") { // if collided object is left or right wall
+                        ballMovement.x *= -1;
+                    }
+
+                    if (objectCollided.name == "topWall" || objectCollided.name == "bottomWall") // if collided object is top or bottow wall
+                    {
+                        ballMovement.y *= -1
+                    }
+
+                    if (objectCollided.name == "brick") { // if collided object is a brick
+                        ballMovement.y *= -1; // invert direction
+                        ballMovement.x *= -1;
+
+                        scene.remove(objectCollided); // remove the brick from scene
+                        collidableMeshList.splice(collidableMeshList.indexOf(objectCollided), 1); // remove brick from collidable objects
+                    }
+
+                    return; // if one of the vertex has collided, we know for sure that a collision is happening.
+                }
+            }
+        }
+
+        // utility
+        function map_number(n, in_min, in_max, out_min, out_max) {
+            return (n - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+        }
     </script>
 </head>
 
