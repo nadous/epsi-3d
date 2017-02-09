@@ -35,6 +35,8 @@
 
         var player; // the player
         var ball; // the ball
+		
+		var bricks = []; // the bricks! nasty bricks...
 
         var collidableMeshList = []; // the mesh that ball can collide with
 
@@ -43,6 +45,7 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             init();
+			gameElementInit();
             animate();
         });
 
@@ -77,6 +80,59 @@
             stats = new Stats();
             container.appendChild(stats.dom);
 			
+			// DAT.GUI
+			
+			// gameControls structure
+			var gameControls = function() {
+				var ballMovementOnPause;
+				var pause = false;
+				
+				this.pause = function() {
+					pause = true;
+					ballMovementOnPause = ballMovement;
+					ballMovement = new THREE.Vector2(0,0);
+				};
+				
+				this.resume = function() {
+					if(pause){
+						ballMovement = ballMovementOnPause;
+						pause = false;
+					}
+				};
+				
+				this.restart = function(){
+					removeAllElement();
+					gameElementInit();
+				};
+			};
+			var controls = new gameControls(); // instanciate it
+			
+			// add gui
+			var gui = new dat.GUI();
+			gui.add(controls, "pause"); // pause function
+			gui.add(controls, "resume"); // resume function
+			gui.add(controls, "restart"); // resume function
+        }
+		
+		function animate() {
+            requestAnimationFrame(animate);
+            render();
+        }
+
+        function render() {
+            /*i += speed;
+            j += speed * .5;*/
+
+			stats.update();
+			
+            renderer.render(scene, camera);
+			detectCollision(); // detect all collisions in game
+            ballAnimation(); // ball movements according to speed, direction
+        }
+
+		// initiate gameElements
+		function gameElementInit()
+		{
 			// LEFT AND RIGHT WALLS
 			var wallGeometry = new THREE.BoxGeometry(.5, 8, .5);
 			var wallMaterial = new THREE.MeshBasicMaterial({
@@ -106,18 +162,18 @@
 					
 			var topWall = new THREE.Mesh(wallGeometry, wallMaterial);
 			topWall.position.set(0, 4, 0);
-			topWall.name = "topBottomWall"; // usefull during collisions
+			topWall.name = "topWall"; // usefull during collisions
 			
 			scene.add(topWall);
 			collidableMeshList.push(topWall);
 			
 			var bottomWall = new THREE.Mesh(wallGeometry, wallMaterial);
 			bottomWall.position.set(0, -4, 0);
-			bottomWall.name = "topBottomWall"; // usefull during collisions
+			bottomWall.name = "bottomWall"; // usefull during collisions
 			
 			scene.add(bottomWall);
 			collidableMeshList.push(bottomWall);
-
+		
 			// BRICKS
             for (var x = -3; x <=3 ; x++) {
                 for (var y = 0; y < 5; y++) {
@@ -126,13 +182,14 @@
                         color: 0xffffff
                     });
 
-                    cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+                    var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
                     cube.position.set(x, y, 0);
 
 					cube.name = "brick";
 					
                     scene.add(cube);
                     collidableMeshList.push(cube);
+					bricks.push(cube);
                 }
             }
 			
@@ -157,59 +214,8 @@
             window.addEventListener('resize', on_window_resize);
 			document.addEventListener( 'keydown', onKeyDown, false ); // listen to keyboard inputs
 			
-			// DAT.GUI
-			
-			// gameControls structure
-			var gameControls = function() {
-				var ballMovementOnPause;
-				var pause = false;
-				
-				this.pause = function() {
-					pause = true;
-					ballMovementOnPause = ballMovement;
-					ballMovement = new THREE.Vector2(0,0);
-				};
-				
-				this.resume = function() {
-					if(pause){
-						ballMovement = ballMovementOnPause;
-						pause = false;
-					}
-				}
-			};
-			var controls = new gameControls(); // instanciate it
-			
-			// add gui
-			var gui = new dat.GUI();
-			gui.add(controls, "pause"); // pause function
-			gui.add(controls, "resume"); // resume function
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            render();
-            update();
-        }
-
-        function render() {
-            /*i += speed;
-            j += speed * .5;*/
-
-            renderer.render(scene, camera);
-        }
-
-        /*
-         * Handle objects on each frame
-         */
-        function update() {
-            //controls.update();
-            stats.update();
-
-            detectCollision(); // detect all collisions in game
-            ballAnimation(); // ball movements according to speed, direction
-
-            render();
-        }
+			ballMovement = new THREE.Vector2(Math.random() * .05, -0.05); // ball speed and movement
+		}
 
         function on_window_resize() {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -289,9 +295,14 @@
 						ballMovement.x = ballMovement.x * -1;
 					}
 					
-					if(objectCollided.name == "topBottomWall") // if collided object is top or bottow wall
+					if(objectCollided.name == "topWall") // if collided object is top wall
 					{
 						ballMovement.y = ballMovement.y * -1
+					}
+					
+					if(objectCollided.name == "bottomWall") // if collided object is bottom wall
+					{
+						gameOver(); // the game is lost when the ball touches the bottom
 					}
 					
 					if(objectCollided.name == "brick"){ // if collided object is a brick
@@ -301,6 +312,8 @@
 						
 						ballMovement.x = ballMovement.x * -1;
 						
+						animateBrickDestruction(); // sound + particles (todo)
+						
 						scene.remove(objectCollided); // remove the brick from scene
 						collidableMeshList.splice(collidableMeshList.indexOf(objectCollided),1); // remove brick from collidable objects
 					}
@@ -308,6 +321,40 @@
 					return; // if one of the vertex has collided, we know for sure that a collision is happening.		
 				}
 			}
+		}
+		
+		/*
+		* sound + animation when a brick is destroyed
+		*/
+		function animateBrickDestruction()
+		{
+			var snd = new Audio("sound/glass_break.mp3"); // buffers automatically when created
+			snd.play();
+		}
+		
+		/*
+		* remove player, ball and bricks from scene
+		*/
+		function removeAllElement()
+		{
+			for(var i = 0; i < bricks.length; i++)
+			{
+				scene.remove(bricks[i]);
+				delete bricks[i];
+			}
+			
+			scene.remove(player);
+			scene.remove(ball);
+			
+			collidableMeshList.splice(0, collidableMeshList.length);
+		}
+		
+		/*
+		* Function executed on gameOver
+		*/
+		function gameOver()
+		{
+			ballMovement = new THREE.Vector2(0,0); // stop ball
 		}
 		
 		// utility
