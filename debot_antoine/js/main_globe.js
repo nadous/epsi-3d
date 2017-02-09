@@ -151,7 +151,8 @@ function doStuff(parsedCountryData, minEmissionCntry, maxEmissionCntry) {
 		  d3.select("#msg").html(country.code);
 
 		   // Overlay the selected country
-		  map = textureCache(country.code, '#CDC290');
+			 //TODO action a faire ici
+		  map = textureCache(country.code, '#00FFFF'); //old color '#CDC290'
 		  material = new THREE.MeshPhongMaterial({map: map, transparent: true});
 		  if (!overlay) {
 			overlay = new THREE.Mesh(new THREE.SphereGeometry(201, 40, 40), material);
