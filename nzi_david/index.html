@@ -16,19 +16,19 @@
         }
     </style>
 
-    <script src="../../three.js-master/build/three.js"></script>
-    <script src="../../three.js-master/examples/js/controls/OrbitControls.js"></script>
+    <script src="JS/three.js-master/build/three.js"></script>
+    <!--<script src="JS/three.js-master/examples/js/controls/OrbitControls.js"></script>-->
 
-    <script src="../../Physijs/physi.js"></script>
+    <script src="JS/physi.js"></script>
 
     <script type="text/javascript">
         /*
          * Configuration des dépendances
          */
-        Physijs.scripts.worker = '../../Physijs/physijs_worker.js';
-        Physijs.scripts.ammo = './../Physijs/examples/js/ammo.js';
+        Physijs.scripts.worker = 'JS/physijs_worker.js';
+        Physijs.scripts.ammo = 'ammo.js';
 
-        let renderer, scene, camera;
+        let renderer, scene, camera, moveX = 0, moveZ = 0;
         let ball, board;
 
         /*
@@ -37,6 +37,8 @@
         const part_size = 50; // taille des dalles
         const board_height = 5; // hauteur du plateau
         const wall_height = 75; // hauteur des murs
+        const camera_height = 600;
+
 
         /*
          * Le labyrinthe
@@ -72,19 +74,49 @@
             });
             scene.setGravity(new THREE.Vector3(0, -250, 0));
 
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
-            camera.position.set(0, 100, 200);
-            camera.lookAt(new THREE.Vector3());
 
-            controls = new THREE.OrbitControls(camera);
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.set(0, camera_height, 0);
+
+            /*controls = new THREE.OrbitControls(camera);
             controls.enableDamping = true;
             controls.dampingFactor = .1;
-            controls.rotateSpeed = .1;
+            controls.rotateSpeed = .1;*/
 
             document.getElementById('container').appendChild(renderer.domElement);
-
+            document.addEventListener( 'keydown', onKeyDown, false ); // listen to keyboard inputs
             init_maze();
         }
+
+        /*
+         * Detect user inputs
+         */
+        function onKeyDown ( event ) {
+            var moveDistanceX = 0.01; // player speed
+            var moveDistanceZ = 0.01;
+
+            switch ( event.keyCode )
+            {
+                case 37: // left arrow
+                    moveZ = moveDistanceZ;
+                    break;
+                case 38: // up arrow
+                    moveX = moveDistanceX;
+                    break;
+                case 39: // right arrow
+                    moveZ = moveDistanceZ;
+                    break;
+                case 40: // down arrow
+                    moveX = moveDistanceX;
+                    break;
+            }
+
+            console.log(moveX, moveZ);
+
+        }
+
+
 
         // function pour créer les cube (mur) et les trous qui seront répété n fois
         function init_maze() {
@@ -114,14 +146,16 @@
             board.__dirtyPosition = true;
             board.position.y = -40;
 
+
             ball = new Physijs.SphereMesh(
                 new THREE.SphereGeometry(10, 16, 16),
                 material,
-                2 // la masse
+                20 // la masse
             );
 
+            ball.position.x = -260;
             ball.position.y = 60;
-            ball.position.x = 25;
+            ball.position.z = -320;
 
             for (let i = 0; i < level.length; i++) {
                 for (let j = 0; j < level[i].length; j++) {
@@ -164,6 +198,8 @@
             cube.position.y = 0;
             cube.position.z = z * part_size;
 
+
+
             board.add(cube);
         }
 
@@ -179,7 +215,7 @@
                 material, 0);
 
             finish.position.x = x * part_size;
-            finish.position.y = 0
+            finish.position.y = -40;
             finish.position.z = z * part_size;
 
             finish.addEventListener('collision', function(object) {
@@ -212,8 +248,15 @@
             requestAnimationFrame(render);
 
             scene.simulate();
-            controls.update();
+            /*controls.update();*/
+            camera.position.set(ball.position.x -20,camera_height,ball.position.z - 20);
+            camera.lookAt(ball.position);
             renderer.render(scene, camera);
+
+
+            board.rotation.x += 0.01;
+            board.rotation.z += 0.01;
+
         }
 
         function map_number(n, in_min, in_max, out_min, out_max) {
