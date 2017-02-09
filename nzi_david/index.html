@@ -40,6 +40,8 @@
         const board_height = 5; // hauteur du plateau
         const wall_height = 75; // hauteur des murs
         const camera_height = 600;
+        const board_rotation = new THREE.Vector3();
+        const key_influence = .01;
         /*
          * Le labyrinthe
          */
@@ -72,7 +74,7 @@
             scene = new Physijs.Scene({
                 fixedTimeStep: 1 / 120
             });
-            scene.setGravity(new THREE.Vector3(0, -250, 0));
+            scene.setGravity(new THREE.Vector3(0, -500, 0));
 
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
             camera.position.set(0, camera_height, 0);
@@ -85,31 +87,8 @@
 
             document.getElementById('container').appendChild(renderer.domElement);
             document.addEventListener('keydown', onKeyDown, false); // listen to keyboard inputs
+
             init_maze();
-        }
-
-        /*
-         * Detect user inputs
-         */
-        function onKeyDown(event) {
-            var moveDistanceX = 0.01; // player speed
-            var moveDistanceZ = 0.01;
-
-            switch (event.keyCode) {
-                case 37: // left arrow
-                    moveZ += moveDistanceZ;
-                    break;
-                case 38: // up arrow
-                    moveX -= moveDistanceX;
-                    break;
-                case 39: // right arrow
-                    moveZ -= moveDistanceZ;
-                    break;
-                case 40: // down arrow
-                    moveX += moveDistanceX;
-                    break;
-            }
-
         }
 
         // function pour créer les cube (mur) et les trous qui seront répété n fois
@@ -140,9 +119,9 @@
             board.__dirtyPosition = true;
 
             ball = new Physijs.SphereMesh(
-                new THREE.SphereGeometry(10, 16, 16),
+                new THREE.SphereGeometry(18, 32, 32),
                 material,
-                20 // la masse
+                200 // la masse
             );
 
             ball.position.x = -260;
@@ -204,14 +183,14 @@
                 material, 0);
 
             finish.position.x = x * part_size;
-            finish.position.y = -40;
+            finish.position.y = 0;
             finish.position.z = z * part_size;
 
             finish.addEventListener('collision', function(object) {
                 alert('You win!');
             });
 
-            scene.add(finish);
+            board.add(finish);
         }
 
         // creation de trou pour faire perdre le joueur
@@ -233,22 +212,42 @@
             board.add(cube);
         }
 
+        /*
+         * Detect user inputs
+         */
+        function onKeyDown(event) {
+            switch (event.keyCode) {
+                case 37: // left arrow
+                    board_rotation.z += key_influence;
+                    break;
+                case 38: // up arrow
+                    board_rotation.x -= key_influence;
+                    break;
+                case 39:
+                    board_rotation.z -= key_influence; // right arrow
+                    break;
+                case 40: // down arrow
+                    board_rotation.x += key_influence;
+                    break;
+            }
+        }
+
         function render() {
             requestAnimationFrame(render);
+            const current_rotation = board.rotation.clone();
+
+            current_rotation.x += board_rotation.x;
+            current_rotation.y += board_rotation.y;
+            current_rotation.z += board_rotation.z;
+
+            board_rotation.multiplyScalar(.9);
+
+            board.rotation.set(current_rotation.x, 0, current_rotation.z);
+            board.__dirtyRotation = true;
 
             scene.simulate();
             controls.update();
-            // camera.position.set(ball.position.x -20,camera_height,ball.position.z - 20);
-            // camera.lookAt(ball.position);
             renderer.render(scene, camera);
-
-            // moveX += .001;
-
-            board.rotation.set(moveX, 0, moveZ);
-            board.__dirtyRotation = true;
-
-            // You may also want to cancel the object's velocity
-
         }
 
         function map_number(n, in_min, in_max, out_min, out_max) {
