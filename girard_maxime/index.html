@@ -53,6 +53,7 @@
 
         window.words = [];
         window.definitions = [];
+        window.totalWordGenerated = 0;
 
         var mouseX = 0;
         var mouseXOnMouseDown = 0;
@@ -137,6 +138,8 @@
             firstWordGeometry.computeBoundingBox();
             var centerOffset = -0.5 * ( firstWordGeometry.boundingBox.max.x - firstWordGeometry.boundingBox.min.x );
 
+
+
             var material = new THREE.MultiMaterial( [
                 new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff, overdraw: 0.5 } ),
                 new THREE.MeshBasicMaterial( { color: 0x000000, overdraw: 0.8 } )
@@ -194,7 +197,7 @@
                         var otherWordsGeometry = new THREE.TextGeometry( data[i].word, {
                             font: font,
                             size: fontSize,
-                            height: 5, // weight 
+                            height: 1, // weight 
                             curveSegments: 1
                         });
 
@@ -239,6 +242,9 @@
 
                         group.add( mesh );
                     }
+                    window.totalWordGenerated += data.length;
+                    $("#totalWords").text(window.totalWordGenerated + " in total");
+                    $("#currentWords").text(window.words.length + " in the scene");
                 },
                 error: function(err) { 
                     alert(err); 
@@ -265,6 +271,7 @@
             scene.children.slice().forEach(function(obj) { 
                 window.words = [];
                 window.definitions = [];
+                $("#currentWords").text("0 in the scene");
                 if(obj.type == "Group" || obj.type == "Line" || obj.type == "Object3D")
                     scene.remove(obj); 
             })
@@ -342,26 +349,19 @@
 
         function onDocumentMouseDown( event ) {
 
-				mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
-				mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+            if(event.which == 1){ // Only for left mouse button
+                mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+                mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
 
-				raycaster.setFromCamera( mouse, camera );
+                raycaster.setFromCamera( mouse, camera );
 
-				var intersects = raycaster.intersectObjects( words );
+                var intersects = raycaster.intersectObjects( words );
 
-				if ( intersects.length > 0 ) {                              
+                if ( intersects.length > 0 ) {                              
                     createWords(window.font, intersects[0].object.name, window.settings.category);
-				}
-
-				/*
-				// Parse all the faces
-				for ( var i in intersects ) {
-
-					intersects[ i ].face.material[ 0 ].color.setHex( Math.random() * 0xffffff | 0x80000000 );
-
-				}
-				*/
-			}
+                }
+            }
+        }
 
         function onDocumentMouseMove( event ) 
         {
@@ -380,7 +380,7 @@
         .demo-card-square > .mdl-card__title {
             color: #fff;
             background:
-                url('../assets/demos/dog.png') bottom right 15% no-repeat #46B6AC;
+               #46B6AC;
         }
         .mdl-card__title-text {
             position: relative;
@@ -399,8 +399,11 @@
         .type{
             font-weight: 600;
         }
+        .mdl-list__item-primary-content{
+            text-align: left;
+        }
     </style>
-    <div class="demo-card-square mdl-card mdl-shadow--2dp" style="position: absolute; bottom: 0; right: 100px; display: none" id="definitionPanel">
+    <div class="demo-card-square mdl-card mdl-shadow--2dp" style="position: absolute; bottom: 0; right: 100px; display: none;" id="definitionPanel">
         <div class="mdl-card__title mdl-card--expand" style="max-height: 50px;">
             <h2 class="mdl-card__title-text" id="wordDefTitle">Definitions</h2>
         </div>
@@ -408,24 +411,56 @@
             <div class="demo-list-action mdl-list">
                 <div class="mdl-list__item">
                     <span class="mdl-list__item-primary-content">
-                    <span id="def0" class="definition"></span>
-                    </span>
-                    <span id="type0" class="type"></span>
-                </div>
-                <div class="mdl-list__item">
-                    <span class="mdl-list__item-primary-content">
-                    <span id="def1" class="definition"></span>
-                    </span>
-                    <span id="type1" class="type"></span>
-                </div>
-                <div class="mdl-list__item">
-                    <span class="mdl-list__item-primary-content">
-                    <span id="def2" class="definition"></span>
+                         <span id="type0" class="type"></span>
                     </span>
                     <span class="mdl-list__item-secondary-content">
-                    <span id="type2" class="type"></span>
-                </span>
+                        <span id="def0" class="definition"></span>
+                    </span>
                 </div>
+                <div class="mdl-list__item">
+                    <span class="mdl-list__item-primary-content">
+                         <span id="type1" class="type"></span>
+                    </span>
+                   <span class="mdl-list__item-secondary-content">
+                        <span id="def1" class="definition"></span>
+                    </span>
+                </div>
+                <div class="mdl-list__item">
+                    <span class="mdl-list__item-primary-content">
+                        <span id="type2" class="type"></span>
+                    </span>
+                    <span class="mdl-list__item-secondary-content">
+                        <span id="def2" class="definition"></span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="demo-card-square mdl-card mdl-shadow--2dp" style="position: absolute; bottom: 0; left: 100px; max-width: 270px; max-height: 225px" id="wordsInfoPanel">
+        <div class="mdl-card__title mdl-card--expand" style="max-height: 50px;">
+            <h2 class="mdl-card__title-text" id="wordDefTitle">Informations</h2>
+        </div>
+        <div class="mdl-card__supporting-text" style="padding-top: 0;">
+            <div class="demo-list-action mdl-list">
+                <ul class="demo-list-two mdl-list">
+                    <li class="mdl-list__item mdl-list__item--two-line">
+                        <span class="mdl-list__item-primary-content">
+                        <i class="material-icons mdl-list__item-avatar">grade</i>
+                        <span>Words generated</span>
+                        <span class="mdl-list__item-sub-title" id="totalWords"></span>
+                        </span>
+                        <span class="mdl-list__item-secondary-content">
+                    </li>
+                    <li class="mdl-list__item mdl-list__item--two-line">
+                        <span class="mdl-list__item-primary-content">
+                        <i class="material-icons mdl-list__item-avatar">timeline</i>
+                        <span>Current Words</span>
+                        <span class="mdl-list__item-sub-title" id="currentWords"></span>
+                        </span>
+
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 </body>
