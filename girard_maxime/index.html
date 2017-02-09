@@ -67,7 +67,7 @@
         var numberOfGroup = 0;
 
         var loader = new THREE.FontLoader();
-        loader.load('fonts/Exo.json', function(font) {
+        loader.load('fonts/exo.json', function(font) {
 
             init(font);
             window.font = font; // create global var
@@ -133,26 +133,19 @@
 
         function createWords(font, word, category) {
             var firstWordGeometry = new THREE.TextGeometry(word, {
+                size: 20, height: 0.1, curveSegments: 1,
                 font: font,
-                size: 20,
-                height: 3,
-                curveSegments: 1,
+                bevelThickness: 0.1, bevelSize: 0.6, bevelEnabled: true,
             });
 
             firstWordGeometry.computeBoundingBox();
 
             // var centerOffset = -0.5 * (firstWordGeometry.boundingBox.max.x - firstWordGeometry.boundingBox.min.x);
-
+            
             var material = new THREE.MultiMaterial([
-                new THREE.MeshBasicMaterial({
-                    color: Math.random() * 0xffffff,
-                    overdraw: 0.5
-                }),
-                new THREE.MeshBasicMaterial({
-                    color: 0x000000,
-                    overdraw: 0.8
-                })
-            ]);
+                new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff }),
+                new THREE.MeshBasicMaterial( { color: 0x000000 } )
+            ]);;
 
             if (numberOfGroup >= 3) {
                 numberOfGroup = 0;
@@ -166,12 +159,10 @@
             var firstMesh = new THREE.Mesh(firstWordGeometry, material);
 
             // firstMesh.position.x = 0;
-            // firstMesh.position.y = 0 - (numberOfGroup * 80);
+            firstMesh.position.y = 0 - (numberOfGroup * 80);
             // firstMesh.position.z = 0 + 5;
             //
             // firstMesh.rotation.x = 0;
-
-            compute_bounds(firstMesh, true);
 
             // API calls by category
             if (category == "Synonyms")
@@ -204,19 +195,17 @@
                         else if (data[i].score > 2000)
                             var fontSize = 12;
 
-                        var otherWordsGeometry = new THREE.TextGeometry(data[i].word, {
+                        var otherWordsGeometry = new THREE.TextGeometry( data[i].word, 
+                        {
+                            size: fontSize, height: 0.1, curveSegments: 1,
                             font: font,
-                            size: fontSize,
-                            height: 1, // weight
-                            curveSegments: 1
+                            bevelThickness: 0.1, bevelSize: 0.6, bevelEnabled: true,
                         });
 
                         otherWordsGeometry.computeBoundingBox();
 
                         var mesh = new THREE.Mesh(otherWordsGeometry, material);
                         mesh.name = data[i].word;
-
-
 
                         if (i == 0) { // Placing the first word after selected word
                             mesh.position.x = firstMesh.position.x + (word.length * 20);
@@ -260,7 +249,7 @@
                     }
                     window.totalWordGenerated += data.length;
                     $("#totalWords").text(window.totalWordGenerated + " in total");
-                    $("#currentWords").text(window.words.length + " in the scene");
+                    $("#currentWords").text(window.bounds.length + " in the scene");
                 },
                 error: function(err) {
                     alert(err);
@@ -279,8 +268,7 @@
             var geometry = new THREE.BoxGeometry(cubeSize.x, cubeSize.y, cubeSize.z);
 
             var material = new THREE.MeshBasicMaterial({
-                color: 0x00ff00,
-                wireframe: true
+                opacity: 0, // make cube transparent
             });
 
             var cube = new THREE.Mesh(geometry, material);
@@ -295,10 +283,8 @@
             } else {
                 material.alpha = 0; // est-ce ainsi ???
             }
-
-
-            // retourner ? ou ajouter dans le tableau direct window.bounds;
-            return cube;
+            cube.name = mesh.name;
+            window.bounds.push(cube);
         }
 
         function onWindowResize() {
@@ -318,6 +304,7 @@
             scene.children.slice().forEach(function(obj) {
                 window.words = [];
                 window.definitions = [];
+                window.bounds = [];
                 $("#currentWords").text("0 in the scene");
                 if (obj.type == "Group" || obj.type == "Line" || obj.type == "Object3D")
                     scene.remove(obj);
@@ -339,11 +326,7 @@
 
             raycaster.setFromCamera(mouse, camera);
 
-            $.each(window.words, function(index, value) { // Make word look at camera
-                value.lookAt(camera.position);
-            });
-
-            var intersects = raycaster.intersectObjects(words);
+            var intersects = raycaster.intersectObjects(window.bounds);
 
             if (intersects.length > 0) {
                 $.each(window.definitions, function(index, value) {
@@ -364,16 +347,18 @@
 
                     }
                 });
-
+                var text = scene.getObjectByName(intersects[0].object.name);
+                text.scale.z = 1.5;
+                text.scale.y= 1.5;
+                text.scale.x = 1.5;
                 intersected = intersects[0];
-                intersects[0].object.scale.x = 1.5;
-                intersects[0].object.scale.y = 1.5;
-                intersects[0].object.scale.z = 1.5;
             } else {
                 if (intersected != null) {
-                    intersected.object.scale.x = 1;
-                    intersected.object.scale.y = 1;
-                    intersected.object.scale.z = 1;
+                    $("#definitionPanel").hide();
+                    var text = scene.getObjectByName(intersected.object.name);
+                    text.scale.z = 1;
+                    text.scale.y= 1;
+                    text.scale.x = 1;
                 }
             }
         }
@@ -396,7 +381,7 @@
 
                 raycaster.setFromCamera(mouse, camera);
 
-                var intersects = raycaster.intersectObjects(words);
+                var intersects = raycaster.intersectObjects(window.bounds);
 
                 if (intersects.length > 0) {
                     createWords(window.font, intersects[0].object.name, window.settings.category);
