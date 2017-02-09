@@ -162,14 +162,14 @@
 					
 			var topWall = new THREE.Mesh(wallGeometry, wallMaterial);
 			topWall.position.set(0, 4, 0);
-			topWall.name = "topBottomWall"; // usefull during collisions
+			topWall.name = "topWall"; // usefull during collisions
 			
 			scene.add(topWall);
 			collidableMeshList.push(topWall);
 			
 			var bottomWall = new THREE.Mesh(wallGeometry, wallMaterial);
 			bottomWall.position.set(0, -4, 0);
-			bottomWall.name = "topBottomWall"; // usefull during collisions
+			bottomWall.name = "bottomWall"; // usefull during collisions
 			
 			scene.add(bottomWall);
 			collidableMeshList.push(bottomWall);
@@ -295,9 +295,14 @@
 						ballMovement.x = ballMovement.x * -1;
 					}
 					
-					if(objectCollided.name == "topBottomWall") // if collided object is top or bottow wall
+					if(objectCollided.name == "topWall") // if collided object is top wall
 					{
 						ballMovement.y = ballMovement.y * -1
+					}
+					
+					if(objectCollided.name == "bottomWall") // if collided object is bottom wall
+					{
+						gameOver(); // the game is lost when the ball touches the bottom
 					}
 					
 					if(objectCollided.name == "brick"){ // if collided object is a brick
@@ -328,7 +333,7 @@
 		}
 		
 		/*
-		*
+		* remove player, ball and bricks from scene
 		*/
 		function removeAllElement()
 		{
@@ -342,6 +347,14 @@
 			scene.remove(ball);
 			
 			collidableMeshList.splice(0, collidableMeshList.length);
+		}
+		
+		/*
+		* Function executed on gameOver
+		*/
+		function gameOver()
+		{
+			ballMovement = new THREE.Vector2(0,0); // stop ball
 		}
 		
 		// utility
