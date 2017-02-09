@@ -12,6 +12,9 @@ import THREE from 'THREE';
 import d3 from 'd3';
 import Papa from "node_modules/papaparse/papaparse"
 
+var gParsedCountryData;
+var gMin;
+var gMax;
 // Pour papaparse, il est nécéssaire de recharger manuellement la librairie -> https://github.com/mholt/PapaParse/issues/148
 Papa.SCRIPT_PATH = "node_modules/papaparse/papaparse.js";
 // Appel de la fonction de parsing avec callback pour transmettre les données
@@ -49,13 +52,27 @@ function parseData(url, callBack) {
     });
 }
 
+// Complete le code hexa d'une couleur par des zero
+function componentToHex(c) {
+    var hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+}
+
+// Transforme un code RGB en hexadecimal
+function rgbToHex(r, g, b) {
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+
 // Fonction callback qui execute la quasi totalité du script
 function doStuff(parsedCountryData, minEmissionCntry, maxEmissionCntry) {
 	// Debug
 	// console.log(parsedCountryData);
 	// console.log(minEmissionCntry);
 	// console.log(maxEmissionCntry);
-
+	gParsedCountryData = parsedCountryData;
+	gMin = minEmissionCntry;
+	gMax = maxEmissionCntry;
 	// Chargement de la carte avec les identifiants par pays. A voir à l'intérieur.
 	// On remarque qu'on définit des arcs de points pour les pays
 	// format: {"type":"MultiPolygon","arcs":[[[6,7,8,9]],[[10,11,12]]],"id":"Angola"}
@@ -79,9 +96,6 @@ function doStuff(parsedCountryData, minEmissionCntry, maxEmissionCntry) {
 	  var textureCache = memoize(
 			function (cntryID, color) {
 				var country = geo.find(cntryID);
-				console.log("--- MouseOver ---")
-				console.log("Id du pays: ",cntryID);
-				console.log("Couleur associé: ",color);
 				return mapTexture(country, color);
 		  }
 		);
@@ -134,34 +148,59 @@ function doStuff(parsedCountryData, minEmissionCntry, maxEmissionCntry) {
 	  }
 
 	  function onGlobeMousemove(event) {
-		var map, material;
+			var map, material;
 
-		// Get pointc, convert to latitude/longitude
-		var latlng = getEventCenter.call(this, event);
+			// Get pointc, convert to latitude/longitude
+			var latlng = getEventCenter.call(this, event);
 
-		// Look for country at that latitude/longitude
-		var country = geo.search(latlng[0], latlng[1]);
+			// Look for country at that latitude/longitude
+			var country = geo.search(latlng[0], latlng[1]);
 
-		if (country !== null && country.code !== currentCountry) {
+			if (country !== null && country.code !== currentCountry) {
 
-		  // Track the current country displayed
-		  currentCountry = country.code;
+			  // Track the current country displayed
+			  currentCountry = country.code;
 
-		  // Update the html
-		  d3.select("#msg").html(country.code);
+			  // Update the html
+			  d3.select("#msg").html(country.code);
 
-		   // Overlay the selected country
-			 //TODO action a faire ici
-		  map = textureCache(country.code, '#00FFFF'); //old color '#CDC290'
-		  material = new THREE.MeshPhongMaterial({map: map, transparent: true});
-		  if (!overlay) {
-			overlay = new THREE.Mesh(new THREE.SphereGeometry(201, 40, 40), material);
-			overlay.rotation.y = Math.PI;
-			root.add(overlay);
-		  } else {
-			overlay.material = material;
-		  }
-		}
+			  // Overlay the selected country
+				//Il faut ici modifier la couleur lors de l'overlay
+				// On va créer des paliers: 4 pour commencer (avec 100%=max et 0%=min)
+				//100 à 75%, rgb de 179,0,0
+				//75 à 50, 255,0,0
+				//50 à 25%, 255,77,77
+				//25 à "0"%, 255,179,179
+				var valueCountry = gParsedCountryData[country.code];
+				var percentCountry = valueCountry *100 / gMax;
+				console.log ("country.code overlaied: ",country.code);
+				console.log ("valur d'emission: ",valueCountry);
+				console.log ("% d'emission: ",percentCountry);
+
+				if (percentCountry>75)
+				{
+					map = textureCache(country.code, rgbToHex(179,0,0));
+				}
+				else if (percentCountry>50){
+					map = textureCache(country.code, rgbToHex(255,0,0));
+				}
+				else if(percentCountry>25){
+					map = textureCache(country.code, rgbToHex(255,77,77));
+				}
+				else
+				{
+					map = textureCache(country.code, rgbToHex(255,179,179));
+				}
+			  //map = textureCache(country.code, '#647089'); //old color '#CDC290'
+			  material = new THREE.MeshPhongMaterial({map: map, transparent: true});
+			  if (!overlay) {
+				overlay = new THREE.Mesh(new THREE.SphereGeometry(201, 40, 40), material);
+				overlay.rotation.y = Math.PI;
+				root.add(overlay);
+			  } else {
+				overlay.material = material;
+			  }
+			}
 	  }
 
 	  setEvents(camera, [baseGlobe], 'click');
