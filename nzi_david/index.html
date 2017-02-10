@@ -37,8 +37,8 @@
          * Taille des éléments
          */
         const part_size = 50; // taille des dalles
-        const board_height = 5; // hauteur du plateau
-        const wall_height = 75; // hauteur des murs
+        const board_height = 10; // hauteur du plateau
+        const wall_height = 50; // hauteur des murs
         const camera_height = 600;
         const board_rotation = new THREE.Vector3();
         const key_influence = .01;
@@ -71,10 +71,8 @@
             });
             renderer.setSize(window.innerWidth, window.innerHeight);
 
-            scene = new Physijs.Scene({
-                fixedTimeStep: 1 / 60
-            });
-            scene.setGravity(new THREE.Vector3(0, -500, 0));
+            scene = new Physijs.Scene();
+            scene.setGravity(new THREE.Vector3(0, -1000, 0));
 
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
             camera.position.set(0, camera_height, 0);
@@ -115,7 +113,7 @@
                 new THREE.CubeGeometry(50, 1, 50),
                 material, 0);
 
-            board.position.y = -40;
+            board.position.y = 0;
             board.__dirtyPosition = true;
 
             ball = new Physijs.SphereMesh(
@@ -125,7 +123,7 @@
             );
 
             ball.position.x = -260;
-            ball.position.y = 60;
+            ball.position.y = 300;
             ball.position.z = -320;
 
             for (let i = 0; i < level.length; i++) {
@@ -148,6 +146,7 @@
             scene.add(board);
             scene.add(ball);
 
+            scene.simulate();
             render();
         }
 
@@ -155,7 +154,7 @@
         function addBoardPart(x, z, rows, cols) {
             const material = Physijs.createMaterial(new THREE.MeshLambertMaterial({
                 color: 0xffffff
-            }), .4, .6);
+            }), .2, .2);
 
             const cube = new Physijs.BoxMesh(
                 new THREE.CubeGeometry(part_size, board_height, part_size),
@@ -206,7 +205,7 @@
             cube.receiveShadow = true;
 
             cube.position.x = x * part_size;
-            cube.position.y = 0;
+            cube.position.y = (wall_height - board_height) * .5;
             cube.position.z = z * part_size;
 
             board.add(cube);
@@ -234,18 +233,24 @@
 
         function render() {
             requestAnimationFrame(render);
-            const current_rotation = board.rotation.clone();
 
-            current_rotation.x += board_rotation.x;
-            current_rotation.y += board_rotation.y;
-            current_rotation.z += board_rotation.z;
+            if (board_rotation.length() > .000001) {
+                const current_rotation = board.rotation.clone();
 
-            board_rotation.multiplyScalar(.9);
+                current_rotation.x += board_rotation.x;
+                current_rotation.y += board_rotation.y;
+                current_rotation.z += board_rotation.z;
 
-            board.rotation.set(current_rotation.x, 0, current_rotation.z);
-            board.__dirtyRotation = true;
+                board_rotation.multiplyScalar(.9);
 
-            scene.simulate(undefined, 4);
+                board.rotation.set(current_rotation.x, 0, current_rotation.z);
+                board.__dirtyRotation = true;
+
+                board.setLinearVelocity(new THREE.Vector3());
+                board.setAngularVelocity(new THREE.Vector3());
+            }
+
+            scene.simulate(undefined, 2);
             controls.update();
             renderer.render(scene, camera);
         }
