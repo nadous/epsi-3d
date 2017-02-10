@@ -3,16 +3,16 @@
 <!-- https://threejs.org/examples/#webgl_geometry_extrude_splines -->
 
 <head>
-    <!--<script src="../../three.js-master/build/three.js"></script>
+    <script src="../../three.js-master/build/three.js"></script>
 
-   <!-- <script src="../../three.js-master/examples/js/Detector.js"></script>
+    <script src="../../three.js-master/examples/js/Detector.js"></script>
     <script src="../../three.js-master/examples/js/libs/stats.min.js"></script>
-    <script src="../../three.js-master/examples/js/controls/OrbitControls.js"></script> -->
+    <script src="../../three.js-master/examples/js/controls/OrbitControls.js"></script>
 
-    <script src="three.js-master/build/three.js"></script>
+    <!-- <script src="three.js-master/build/three.js"></script>
     <script src="three.js-master/examples/js/Detector.js"></script>
 	<script src="three.js-master/examples/js/libs/stats.min.js"></script>
-	<script src="three.js-master/examples/js/controls/OrbitControls.js"></script>  
+	<script src="three.js-master/examples/js/controls/OrbitControls.js"></script>   -->
 
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <style>
@@ -22,6 +22,7 @@
             margin: 0px;
             overflow: hidden;
         }
+
         #bob_containerDiv {
             display: inline-block;
         }
@@ -31,7 +32,7 @@
         const MODE_DRAW = 0;
         const MODE_TRAIN = 1;
         var mode = MODE_DRAW;
-        var current_line_index = 0;
+        var cam_index = 0;
         var lastPoint = null;
         var container;
         var cylinder;
@@ -43,19 +44,17 @@
         var depthFactor = 150;
         var windowHalfX = window.innerWidth / 2,
             windowHalfY = window.innerHeight / 2;
-		var sphereGeo, sphereMat, sphereMesh;
-		var spherePoint, altitude, coeff;	
-		var rad = 50;
-      
-		
-		
-		// Ecouteur d'événements
-		document.addEventListener('DOMContentLoaded', function() {
+        var sphereGeo, sphereMat, sphereMesh;
+        var spherePoint, altitude, coeff;
+        var rad = 5;
+
+        // Ecouteur d'événements
+        document.addEventListener('DOMContentLoaded', function() {
             init();
         });
-		document.addEventListener('keypress', on_key_press);
-		
-		///// Functions used for drawing the line
+        document.addEventListener('keypress', on_key_press);
+
+        ///// Functions used for drawing the line
         function get3dPointZAxis(event) {
             var vector = new THREE.Vector3(
                 (event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1,
@@ -68,12 +67,15 @@
             pos.setZ(Math.sin(z) * depthFactor);
             return pos;
         }
+
         function startDraw(event) {
             lastPoint = get3dPointZAxis(event);
         }
+
         function stopDraw(event) {
             lastPoint = null;
         }
+
         function doDraw(event) {
             if (lastPoint) {
                 var pos = get3dPointZAxis(event);
@@ -95,11 +97,11 @@
                 }
             }
         }
-		
+
         // This function allow to create the cylinder by
-		// pressing the Enter Key
-        
-		
+        // pressing the Enter Key
+
+
         function on_key_press(e) {
             var key = e.which || e.keyCode;
             if (key === 13) { // 13 is enter
@@ -114,27 +116,29 @@
                 // controls.rotateSpeed = .1;
             }
         }
-		// this function create the cylinder througth the lines array
+        // this function create the cylinder througth the lines array
         function commit_lines() {
             isRotating = false;
-			
+
             for (var i = 0; i < lines.length; i++) {
                 var vertices = lines[i].geometry.vertices;
                 cylinder = get_cylinder(vertices[0], vertices[1]);
                 scene.add(cylinder);
             }
-			// On ajoute une sphere qui prend le trajectoire de la ligne
-			
-					sphereGeo = new THREE.SphereGeometry( rad, 16, 12 );
-					sphereMat = new THREE.MeshNormalMaterial();
+            // On ajoute une sphere qui prend le trajectoire de la ligne
 
-					sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
-					
-					scene.add(sphereMesh);
+            sphereGeo = new THREE.SphereGeometry(rad, 16, 12);
+            sphereMat = new THREE.MeshNormalMaterial({
+                side: THREE.DoubleSide
+            });
+
+            sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+
+            scene.add(sphereMesh);
             mode = MODE_TRAIN;
         }
-		
-		// THe function return the cylinderGeometry
+
+        // THe function return the cylinderGeometry
         function get_cylinder(pointX, pointY) {
             var mat = new THREE.MeshBasicMaterial({
                 color: Math.random() * 0xffffff,
@@ -156,7 +160,7 @@
             edge.position.z = (pointY.z + pointX.z) / 2;
             return edge;
         }
-    
+
         function init() {
             container = document.createElement('div');
             document.body.appendChild(container);
@@ -174,12 +178,12 @@
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, 0, 1);
             scene.add(light);
-			
-			
 
-			altitude = 100;
 
-			coeff = 1+ altitude/rad;
+
+            altitude = 100;
+
+            coeff = 1 + altitude / rad;
 
             //
             if (Detector.webgl)
@@ -200,7 +204,7 @@
             window.addEventListener('resize', onWindowResize, false);
             animate();
         }
-		
+
         function onWindowResize() {
             windowHalfX = window.innerWidth / 2;
             windowHalfY = window.innerHeight / 2;
@@ -208,6 +212,7 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
+
         function animate() {
             requestAnimationFrame(animate);
             render();
@@ -215,6 +220,7 @@
         }
         var radius = 1000;
         var theta = 90;
+
         function render() {
             if (isRotating) {
                 theta += 0.1;
@@ -224,19 +230,35 @@
                 camera.lookAt(scene.position);
             }
             if (mode === MODE_TRAIN) {
-				
-                if (current_line_index >= lines.length - 1)
-                    current_line_index = 0;
 
-				var vertices = lines[current_line_index].geometry.vertices;	
-                var cam_position = vertices[0];
-                sphereMesh.position.set(cam_position.x, cam_position.y, cam_position.z);
-				
-				var vertices1 = lines[current_line_index + 10].geometry.vertices;	
-                var lookat_position = vertices1[0];
-                //camera.lookAt(sphereMesh.position);
-				camera.lookAt(camera.position);
-                current_line_index++;
+                if (cam_index >= lines.length - 1)
+                    cam_index = 0;
+
+                var lookat_index = cam_index + 10;
+                if (lookat_index >= lines.length - 1)
+                    lookat_index = 0;
+
+                var sphere_index = cam_index + 5;
+                if (sphere_index >= lines.length - 1)
+                    sphere_index = 0;
+
+                var cam_vertice = lines[cam_index].geometry.vertices;
+                var cam_position = cam_vertice[0];
+
+                var loookat_vertice = lines[lookat_index].geometry.vertices;
+                var lookat_position = loookat_vertice[0];
+
+                var sphere_vertice = lines[sphere_index].geometry.vertices;
+                var sphere_position = sphere_vertice[0];
+
+                sphereMesh.position.set(sphere_position.x, sphere_position.y - 10, sphere_position.z);
+
+                camera.position.set(cam_position.x, cam_position.y, cam_position.z);
+                camera.lookAt(lookat_position);
+
+                console.log(camera.up);
+
+                cam_index++;
             }
             renderer.render(scene, camera);
         }
