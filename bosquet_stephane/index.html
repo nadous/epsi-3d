@@ -31,6 +31,8 @@
 
     <script>
         var clock;
+        var interval = 1000 / 45;
+        var delta = 0;
 
         var container, stats;
         var scene, camera, renderer, controls;
@@ -226,15 +228,20 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            detectCollision();
-            ballAnimation(); // ball movements according to speed, direction
+            if (delta > interval) {
+                delta = clock.getDelta() * 1000;
 
-            if (bricks.length == 0) // if there is no bricks left, the game is over!
-            {
-                gameWin();
-            }
+                detectCollision();
+                ballAnimation(); // ball movements according to speed, direction
 
-            render();
+                if (bricks.length == 0) // if there is no bricks left, the game is over!
+                {
+                    gameWin();
+                }
+
+                render();
+            } else
+                delta += (clock.getDelta() * 1000) % interval;
         }
 
         function render() {
