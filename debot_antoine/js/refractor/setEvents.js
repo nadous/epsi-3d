@@ -1,9 +1,7 @@
-import THREE from 'THREE';
-import { debounce } from './utils';
 
 let raycaster = new THREE.Raycaster();
 
-export function setEvents(camera, items, type, wait) {
+ function setEvents(camera, items, type, wait) {
 
   let listener = function(event) {
 
