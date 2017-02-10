@@ -1,7 +1,7 @@
 <html lang="en">
 
 <head>
-    <title> INTRO </title>
+    <title> 3DWords </title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no">
     <style>
@@ -20,12 +20,16 @@
             margin: 0px;
             overflow: hidden;
         }
+
         canvas {
             width: 100%;
             height: 100%;
         }
     </style>
 
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
     <script src="js/three.js"></script>
     <script src="js/datGui.js"></script>
     <script src="js/jquery.js"></script>
@@ -35,7 +39,7 @@
     <script src="js/Projector.js"></script>
     <script src="js/OrbitControls.js"></script>
     <script src="js/CanvasRenderer.js"></script>
-<script>
+    <script>
         var container, stats;
 
         var camera, scene, renderer, controls;
@@ -45,190 +49,242 @@
         var targetRotation = 0;
         var targetRotationOnMouseDown = 0;
 
+        var raycaster;
+        var mouse;
+
+        window.words = [];
+        window.bounds = [];
+        window.definitions = [];
+        window.totalWordGenerated = 0;
+
         var mouseX = 0;
         var mouseXOnMouseDown = 0;
+
+        var intersected;
 
         var windowHalfX = window.innerWidth / 2;
         var windowHalfY = window.innerHeight / 2;
         var numberOfGroup = 0;
 
         var loader = new THREE.FontLoader();
-        loader.load( 'fonts/exo.json', function ( font ) {
+        loader.load('fonts/exo.json', function(font) {
 
-            init( font );
+            init(font);
+            window.font = font; // create global var
             animate();
 
-        } );
-        
+        });
 
-        function init( font ) {
+
+        function init(font) {
 
             var FizzyText = function() {
                 this.word = 'Bad';
                 this.category = "Synonyms";
-                this.generate = function(){
+                this.generate = function() {
                     createWords(font, this.word, this.category);
                 };
-                this.reset = function(){
+                this.reset = function() {
                     destroyWords();
                 };
             };
 
-            var settings = new FizzyText();
+            window.settings = new FizzyText(); // make settings global
             var gui = new dat.GUI();
 
             gui.add(settings, 'word');
-            gui.add(settings, 'category', [ 'Synonyms', 'Antonyms', 'Rhymes', 'Suggestions', 'SoundLike' ] );
+            gui.add(settings, 'category', ['Synonyms', 'Antonyms', 'Rhymes', 'Suggestions', 'SoundLike']);
 
             gui.add(settings, 'generate');
 
             gui.add(settings, 'reset');
 
-            container = document.createElement( 'div' );
-            document.body.appendChild( container );
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            container = document.createElement('div');
+            document.body.appendChild(container);
 
             scene = new THREE.Scene();
 
-            var ambientLight = new THREE.AmbientLight(0x404040);
-            scene.add(ambientLight);
+            createWords(font, settings.word, settings.category); // Create initial word
 
-            createWords(font, settings.word, settings.category);
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.set(-300, 200, 400);
 
-            camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
-            camera.position.set( 0, 100, 400 );
-            
-            renderer = new THREE.CanvasRenderer({ alpha: true });
-            renderer.setPixelRatio( window.devicePixelRatio );
-            renderer.setSize( window.innerWidth, window.innerHeight );
-            container.appendChild( renderer.domElement );
+            renderer = new THREE.CanvasRenderer({
+                alpha: true
+            }); // make canvas transparent
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
 
-            controls = new THREE.OrbitControls(camera,renderer.domElement);
-            
-            controls.enableDamping = true;
-            controls.dampingFactor = .1;
-            controls.rotateSpeed = .1;
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
 
             stats = new Stats();
-            container.appendChild( stats.dom );
+            container.appendChild(stats.dom);
 
-            window.addEventListener( 'resize', onWindowResize, false );
-
+            window.addEventListener('resize', onWindowResize, false);
+            window.addEventListener('mousedown', onDocumentMouseDown, false);
+            window.addEventListener('touchstart', onDocumentTouchStart, false);
+            window.addEventListener('mousemove', onDocumentMouseMove, false);
         }
 
 
-        function createWords(font, word, category){
-            var firstWordGeometry = new THREE.TextGeometry( word, {
+        function createWords(font, word, category) {
+            var firstWordGeometry = new THREE.TextGeometry(word, {
+                size: 20, height: 0.1, curveSegments: 1,
                 font: font,
-                size: 20,
-                height: 3,
-                curveSegments: 1,
+                bevelThickness: 0.1, bevelSize: 0.6, bevelEnabled: true,
             });
 
             firstWordGeometry.computeBoundingBox();
-            var centerOffset = -0.5 * ( firstWordGeometry.boundingBox.max.x - firstWordGeometry.boundingBox.min.x );
 
-            var material = new THREE.MultiMaterial( [
-                new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff, overdraw: 0.5 } ),
-                new THREE.MeshBasicMaterial( { color: 0x000000, overdraw: 0.5 } )
-            ] );
+            // var centerOffset = -0.5 * (firstWordGeometry.boundingBox.max.x - firstWordGeometry.boundingBox.min.x);
+            
+            var material = new THREE.MultiMaterial([
+                new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff }),
+                new THREE.MeshBasicMaterial( { color: 0x000000 } )
+            ]);;
 
-            if(numberOfGroup >= 3) {
+            if (numberOfGroup >= 3) {
                 numberOfGroup = 0;
                 destroyWords();
             }
+
             group = new THREE.Group();
             numberOfGroup++;
-            
-            var firstMesh = new THREE.Mesh( firstWordGeometry, material );
 
-            firstMesh.position.x = 0;
-            firstMesh.position.y = 0 - (numberOfGroup * 100);
-            firstMesh.position.z = 0 + 5;
+            // Creating firstWord
+            var firstMesh = new THREE.Mesh(firstWordGeometry, material);
 
-            firstMesh.rotation.x = 0;
-            firstMesh.rotation.y = Math.PI * 2;
+            // firstMesh.position.x = 0;
+            firstMesh.position.y = 0 - (numberOfGroup * 80);
+            // firstMesh.position.z = 0 + 5;
+            //
+            // firstMesh.rotation.x = 0;
 
-            if(category == "Synonyms")
-                url = "https://api.datamuse.com/words?max=10&rel_syn=";
-            else if(category == "Antonyms")
+            // API calls by category
+            if (category == "Synonyms")
+                url = "https://api.datamuse.com/words?max=10&md=d&rel_syn=";
+            else if (category == "Antonyms")
                 url = "https://api.datamuse.com/words?max=10&rel_ant=";
-            else if(category == "Suggestions")
+            else if (category == "Suggestions")
                 url = "https://api.datamuse.com/sug?max=10&s=";
-            else if(category == "SoundLike")
+            else if (category == "SoundLike")
                 url = "https://api.datamuse.com/words?max=10&sl=";
-            else   
+            else
                 url = "https://api.datamuse.com/words?max=10&rel_rhy=";
 
-            group.add( firstMesh );
+            group.add(firstMesh);
             $.ajax({
                 url: url + word,
-                type: 'GET', 
+                type: 'GET',
                 dataType: 'json',
-                success: function(data) { 
-                    for(var i = 0; i < data.length; i++)
-                    {
-                        if(data[i].score >= 10 &&  data[i].score < 150)
+                success: function(data) {
+                    for (var i = 0; i < data.length; i++) {
+                        // Resize text by score word
+                        if (data[i].score >= 10 && data[i].score < 150)
                             var fontSize = 7;
-                        else if(data[i].score >= 150 &&  data[i].score < 500)
-                            var fontSize = 9;                        
-                        else if(data[i].score >= 500 &&  data[i].score <= 1000)
+                        else if (data[i].score >= 150 && data[i].score < 500)
+                            var fontSize = 9;
+                        else if (data[i].score >= 500 && data[i].score <= 1000)
                             var fontSize = 10;
-                        else if(data[i].score >= 1000 &&  data[i].score <= 2000)
+                        else if (data[i].score >= 1000 && data[i].score <= 2000)
                             var fontSize = 11;
-                        else if(data[i].score > 2000)
+                        else if (data[i].score > 2000)
                             var fontSize = 12;
 
-                        var otherWordsGeometry = new THREE.TextGeometry( data[i].word, {
+                        var otherWordsGeometry = new THREE.TextGeometry( data[i].word, 
+                        {
+                            size: fontSize, height: 0.1, curveSegments: 1,
                             font: font,
-                            size: fontSize,
-                            height: 5, // épaisseur 
-                            curveSegments: 1
+                            bevelThickness: 0.1, bevelSize: 0.6, bevelEnabled: true,
                         });
 
                         otherWordsGeometry.computeBoundingBox();
 
-                        var mesh = new THREE.Mesh( otherWordsGeometry, material );
-                        
-                        if(i == 0){
+                        var mesh = new THREE.Mesh(otherWordsGeometry, material);
+                        mesh.name = data[i].word;
+
+                        if (i == 0) { // Placing the first word after selected word
                             mesh.position.x = firstMesh.position.x + (word.length * 20);
                             mesh.position.y = firstMesh.position.y + 5 * (i + 1);
-                            mesh.position.z = firstMesh.position.z;   
+                            mesh.position.z = firstMesh.position.z;
 
                             var startPoint = new THREE.Vector3(firstMesh.position.x, firstMesh.position.y, firstMesh.position.z);
-                            var endPoint   = new THREE.Vector3(mesh.position.x, mesh.position.y, mesh.position.z);
+                            var endPoint = new THREE.Vector3(mesh.position.x, mesh.position.y, mesh.position.z);
                             var direction = new THREE.Vector3().subVectors(endPoint, startPoint).normalize();
-                            var arrow = new THREE.ArrowHelper(direction, startPoint, startPoint.distanceTo(endPoint), 0xCC0000 );
+                            var arrow = new THREE.ArrowHelper(direction, startPoint, startPoint.distanceTo(endPoint), 0xCC0000);
                             scene.add(arrow);
 
-                        }
-                        else{
-                            mesh.position.x = previousMesh.position.x + (previousWord.length * 10);   
+                        } else { // Placing others word
+                            mesh.position.x = previousMesh.position.x + (previousWord.length * 10);
                             mesh.position.y = firstMesh.position.y + 5 * (i + 1);
-                            mesh.position.z = firstMesh.position.z;     
+                            mesh.position.z = previousMesh.position.z - 20;
 
                             var lineGeometry = new THREE.Geometry();
-                            lineGeometry.vertices.push( new THREE.Vector3(previousMesh.position.x, previousMesh.position.y, previousMesh.position.z), new THREE.Vector3(mesh.position.x, mesh.position.y, mesh.position.z) );
+                            lineGeometry.vertices.push(new THREE.Vector3(previousMesh.position.x, previousMesh.position.y, previousMesh.position.z), new THREE.Vector3(mesh.position.x, mesh.position.y, mesh.position.z));
                             lineGeometry.computeLineDistances();
-                            var lineMaterial = new THREE.LineBasicMaterial( { color: 0xCCCCCC } );
-                            var line = new THREE.Line( lineGeometry, lineMaterial );
-                            scene.add(line);             
+                            var lineMaterial = new THREE.LineBasicMaterial({
+                                color: 0xCCCCCC
+                            });
+                            var line = new THREE.Line(lineGeometry, lineMaterial);
+                            scene.add(line);
                         }
 
-                        mesh.rotation.x = 0;
-                        mesh.rotation.y = Math.PI * 2;
+                        compute_bounds(mesh, true);
 
                         var previousMesh = mesh;
                         var previousWord = data[i].word;
 
-                        group.add( mesh );
+                        var wordDefinitions = {
+                            name: data[i].word,
+                            definitions: data[i].defs
+                        };
+
+                        window.definitions.push(wordDefinitions);
+
+                        group.add(mesh);
                     }
+                    window.totalWordGenerated += data.length;
+                    $("#totalWords").text(window.totalWordGenerated + " in total");
+                    $("#currentWords").text(window.bounds.length + " in the scene");
                 },
-                error: function(err) { 
-                    alert(err); 
+                error: function(err) {
+                    alert(err);
                 }
             });
 
-            scene.add( group );
+            scene.add(group);
+        }
+
+        function compute_bounds(mesh, addToScene) {
+            if (addToScene === undefined)
+                addToScene = false;
+
+            var bounds = mesh.geometry.boundingBox;
+            var cubeSize = new THREE.Vector3().subVectors(bounds.max, bounds.min)
+            var geometry = new THREE.BoxGeometry(cubeSize.x, cubeSize.y, cubeSize.z);
+
+            var material = new THREE.MeshBasicMaterial({
+                opacity: 0, // make cube transparent
+            });
+
+            var cube = new THREE.Mesh(geometry, material);
+
+            cube.position.set(
+                mesh.position.x + cubeSize.x * .5,
+                mesh.position.y + cubeSize.y * .5,
+                mesh.position.z + cubeSize.z * .5);
+
+            if (addToScene) {
+                scene.add(cube);
+            } else {
+                material.alpha = 0; // est-ce ainsi ???
+            }
+            cube.name = mesh.name;
+            window.bounds.push(cube);
         }
 
         function onWindowResize() {
@@ -239,21 +295,25 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
 
-            renderer.setSize( window.innerWidth, window.innerHeight );
+            renderer.setSize(window.innerWidth, window.innerHeight);
 
         }
 
-        function destroyWords(){
-            scene.children.slice().forEach(function(obj) { 
-                console.log(scene.children);
-                if(obj.type == "Group" || obj.type == "Line" || obj.type == "Object3D")
-                    scene.remove(obj); 
+        // Delete every words generation
+        function destroyWords() {
+            scene.children.slice().forEach(function(obj) {
+                window.words = [];
+                window.definitions = [];
+                window.bounds = [];
+                $("#currentWords").text("0 in the scene");
+                if (obj.type == "Group" || obj.type == "Line" || obj.type == "Object3D")
+                    scene.remove(obj);
             })
         }
 
         function animate() {
 
-            requestAnimationFrame( animate );
+            requestAnimationFrame(animate);
 
             render();
             stats.update();
@@ -262,14 +322,177 @@
 
         function render() {
 
-            group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
-            renderer.render( scene, camera );
+            renderer.render(scene, camera);
+
+            raycaster.setFromCamera(mouse, camera);
+
+            var intersects = raycaster.intersectObjects(window.bounds);
+
+            if (intersects.length > 0) {
+                $.each(window.definitions, function(index, value) {
+                    if (value.name == intersects[0].object.name) {
+                        $("#wordDefTitle").text(value.name + " definitions");
+                        for (var i = 0; i < 3; i++) {
+                            var splittedText = value.definitions[i].split("\t");
+                            $("#definitionPanel").show();
+                            if (splittedText[0] == "n") {
+                                $("#type" + i).text("name");
+                            } else if (splittedText[0] == "n") {
+                                $("#type" + i).text("verb");
+                            } else {
+                                $("#type" + i).text(splittedText[0]);
+                            }
+                            $("#def" + i).text(splittedText[1]);
+                        }
+
+                    }
+                });
+                var text = scene.getObjectByName(intersects[0].object.name);
+                text.scale.z = 1.5;
+                text.scale.y= 1.5;
+                text.scale.x = 1.5;
+                intersected = intersects[0];
+            } else {
+                if (intersected != null) {
+                    $("#definitionPanel").hide();
+                    var text = scene.getObjectByName(intersected.object.name);
+                    text.scale.z = 1;
+                    text.scale.y= 1;
+                    text.scale.x = 1;
+                }
+            }
         }
 
+        function onDocumentTouchStart(event) {
+
+            event.preventDefault();
+
+            event.clientX = event.touches[0].clientX;
+            event.clientY = event.touches[0].clientY;
+            onDocumentMouseDown(event);
+
+        }
+
+        function onDocumentMouseDown(event) {
+
+            if (event.which == 1) { // Only for left mouse button
+                mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+                mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+
+                var intersects = raycaster.intersectObjects(window.bounds);
+
+                if (intersects.length > 0) {
+                    createWords(window.font, intersects[0].object.name, window.settings.category);
+                }
+            }
+        }
+
+        function onDocumentMouseMove(event) {
+            mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+            mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+        }
     </script>
 </head>
 
 <body>
+    <style>
+        .demo-card-square.mdl-card {
+            width: 400px;
+        }
+
+        .demo-card-square>.mdl-card__title {
+            color: #fff;
+            background: #46B6AC;
+        }
+
+        .mdl-card__title-text {
+            position: relative;
+            bottom: -5px;
+        }
+
+        .demo-list-two {
+            width: 300px;
+            margin-top: 0;
+        }
+
+        .mdl-list__item {
+            padding: 8px;
+        }
+
+        .definition {
+            font-style: italic;
+        }
+
+        .type {
+            font-weight: 600;
+        }
+
+        .mdl-list__item-primary-content {
+            text-align: left;
+        }
+    </style>
+    <div class="demo-card-square mdl-card mdl-shadow--2dp" style="position: absolute; bottom: 0; right: 100px; display: none;" id="definitionPanel">
+        <div class="mdl-card__title mdl-card--expand" style="max-height: 50px;">
+            <h2 class="mdl-card__title-text" id="wordDefTitle">Definitions</h2>
+        </div>
+        <div class="mdl-card__supporting-text" style="padding-top: 0;">
+            <div class="demo-list-action mdl-list">
+                <div class="mdl-list__item">
+                    <span class="mdl-list__item-primary-content">
+                         <span id="type0" class="type"></span>
+                    </span>
+                    <span class="mdl-list__item-secondary-content">
+                        <span id="def0" class="definition"></span>
+                    </span>
+                </div>
+                <div class="mdl-list__item">
+                    <span class="mdl-list__item-primary-content">
+                         <span id="type1" class="type"></span>
+                    </span>
+                    <span class="mdl-list__item-secondary-content">
+                        <span id="def1" class="definition"></span>
+                    </span>
+                </div>
+                <div class="mdl-list__item">
+                    <span class="mdl-list__item-primary-content">
+                        <span id="type2" class="type"></span>
+                    </span>
+                    <span class="mdl-list__item-secondary-content">
+                        <span id="def2" class="definition"></span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="demo-card-square mdl-card mdl-shadow--2dp" style="position: absolute; bottom: 0; left: 100px; max-width: 270px; max-height: 225px" id="wordsInfoPanel">
+        <div class="mdl-card__title mdl-card--expand" style="max-height: 50px;">
+            <h2 class="mdl-card__title-text" id="wordDefTitle">Informations</h2>
+        </div>
+        <div class="mdl-card__supporting-text" style="padding-top: 0;">
+            <div class="demo-list-action mdl-list">
+                <ul class="demo-list-two mdl-list">
+                    <li class="mdl-list__item mdl-list__item--two-line">
+                        <span class="mdl-list__item-primary-content">
+                        <i class="material-icons mdl-list__item-avatar">grade</i>
+                        <span>Words generated</span>
+                        <span class="mdl-list__item-sub-title" id="totalWords"></span>
+                        </span>
+                        <span class="mdl-list__item-secondary-content">
+                    </li>
+                    <li class="mdl-list__item mdl-list__item--two-line">
+                        <span class="mdl-list__item-primary-content">
+                        <i class="material-icons mdl-list__item-avatar">timeline</i>
+                        <span>Current Words</span>
+                        <span class="mdl-list__item-sub-title" id="currentWords"></span>
+                        </span>
+
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

@@ -5,17 +5,16 @@
     "main": "index.js",
     "dependencies": {
         "d3": "^3.5.5",
-        "three": "^0.71.0"
+        "three": "^0.81.0"
     },
     "devDependencies": {
         "babel": "^5.4.3",
         "babel-core": "^5.4.3",
-        "es6-module-loader": "^0.16.6",
+        "es6-module-loader": "^0.17.11",
         "systemjs": "^0.16.11",
         "topojson": "^1.6.19",
         "papaparse": "^4.1.4",
-        "three-orbit-controls": "^82.1.0",
-        "orbit-controls-es6": "^1.0.8"
+        "three-orbit-controls": "^82.1.0"
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
