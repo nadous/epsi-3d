@@ -8,8 +8,8 @@
     <link rel="stylesheet" type="text/css" href="css/style.css">
 
 
-    <script src="lib/three.js/build/three.js"></script>
-    <script src="lib/three.js/examples/js/controls/OrbitControls.js"></script>
+    <script src="lib/three.js/three.js"></script>
+    <script src="lib/three.js/OrbitControls.js"></script>
     <script src="lib/d3/d3.js"></script>
     <script src="lib/topojson/topojson.js"></script>
     <script src="lib/papaparse/papaparse.js"></script>
@@ -162,7 +162,6 @@
                 cloudMesh = new THREE.Mesh(geometry, material);
                 cloudMesh.rotation.y = Math.PI;
 
-
                 let backgroundGeometry = new THREE.SphereGeometry(400, segments, segments);
                 let backgroundMaterial = new THREE.MeshPhongMaterial({
                     map: THREE.ImageUtils.loadTexture('img/starB.png'),
@@ -172,9 +171,6 @@
 
                 starBackground = new THREE.Mesh(backgroundGeometry,backgroundMaterial);
                 starBackground.rotation.y = Math.PI;
-
-
-
 
                 // create a container node and add the two meshes
                 var root = new THREE.Object3D();
