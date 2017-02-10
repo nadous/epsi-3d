@@ -30,6 +30,8 @@
     <script src="../../three.js-master/examples/js/libs/dat.gui.min.js"></script>
 
     <script>
+        var clock;
+
         var container, stats;
         var scene, camera, renderer, controls;
 
@@ -111,6 +113,7 @@
             gui.add(controls, "resume"); // resume function
             gui.add(controls, "restart"); // resume function
 
+            clock = new THREE.Clock();
             gameElementInit();
         }
 
@@ -190,12 +193,24 @@
             collidableMeshList.push(player);
 
             // BALL
-            var geometry = new THREE.SphereGeometry(0.2, 20, 20);
-            var material = new THREE.MeshBasicMaterial({
+
+            ball = new THREE.Group();
+
+            var sphere_geometry = new THREE.SphereGeometry(0.2, 20, 20);
+            var sphere_material = new THREE.MeshBasicMaterial({
                 color: 0xffffff
             });
 
-            ball = new THREE.Mesh(geometry, material); // init ball
+            var sphere = new THREE.Mesh(sphere_geometry, sphere_material); // init ball
+
+            ball.add(sphere);
+
+            var circle_geometry = new THREE.CircleGeometry(.2, 12);
+            var circle = new THREE.Mesh(circle_geometry);
+            circle.visible = false;
+
+            ball.add(circle);
+
             ball.position.set(0, -1, 0);
             scene.add(ball);
 
@@ -210,23 +225,21 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            render();
-        }
 
-        function render() {
-            /*i += speed;
-            j += speed * .5;*/
-
-            stats.update();
-
-            renderer.render(scene, camera);
-            detectCollision(); // detect all collisions in game
+            detectCollision();
             ballAnimation(); // ball movements according to speed, direction
 
             if (bricks.length == 0) // if there is no bricks left, the game is over!
             {
                 gameWin();
             }
+
+            render();
+        }
+
+        function render() {
+            stats.update();
+            renderer.render(scene, camera);
         }
 
         function on_window_resize() {
@@ -263,9 +276,9 @@
          */
         function ballAnimation() {
             if (Math.abs(ballMovement.x) > BALL_MAX_SPEED)
-                ballMovement.x = BALL_MAX_SPEED;
+                ballMovement.x = BALL_MAX_SPEED - .001;
             if (Math.abs(ballMovement.y) > BALL_MAX_SPEED)
-                ballMovement.y = BALL_MAX_SPEED;
+                ballMovement.y = BALL_MAX_SPEED - .001;
 
             //console.log("speed : " + Math.abs(ballMovement.x) + " ; " + Math.abs(ballMovement.y));
 
@@ -278,8 +291,10 @@
          */
         function detectCollision() {
             var originPoint = ball.position.clone();
-            for (var vertexIndex = 0; vertexIndex < ball.geometry.vertices.length; vertexIndex++) {
-                var localVertex = ball.geometry.vertices[vertexIndex].clone();
+            var circle_geometry = ball.children[1].geometry;
+
+            for (var vertexIndex = 0; vertexIndex < circle_geometry.vertices.length; vertexIndex++) {
+                var localVertex = circle_geometry.vertices[vertexIndex].clone();
                 var globalVertex = localVertex.applyMatrix4(ball.matrix);
                 var directionVector = globalVertex.sub(ball.position);
 
@@ -328,7 +343,7 @@
                         bricks.splice(bricks.indexOf(objectCollided), 1);
                     }
 
-                    return; // if one of the vertex has collided, we know for sure that a collision is happening.
+                    break; // if one of the vertex has collided, we know for sure that a collision is happening.
                 }
             }
         }
