@@ -31,9 +31,19 @@
 
     <script>
         var clock;
+<<<<<<< HEAD
         var interval = 1000 / 45;
         var delta = 0;
 
+=======
+		
+		var fps = 30; // scene fps
+		var now;
+		var then = Date.now();
+		var interval = 1000/fps;
+		var delta;
+		
+>>>>>>> b6bcce87a712f6dc740928bacde3c6afc3fea5e7
         var container, stats;
         var scene, camera, renderer, controls;
 
@@ -49,6 +59,8 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             init();
+			gameElementInit();
+			animate();
         });
 
         function init() {
@@ -106,6 +118,11 @@
                     removeAllElement();
                     gameElementInit();
                 };
+				
+				this.changeFPS = function(){
+					fps = (fps == 60 ? 30 : 60);
+					interval = 1000/fps;
+				};
             };
             var controls = new gameControls(); // instanciate it
 
@@ -114,9 +131,7 @@
             gui.add(controls, "pause"); // pause function
             gui.add(controls, "resume"); // resume function
             gui.add(controls, "restart"); // resume function
-
-            clock = new THREE.Clock();
-            gameElementInit();
+            gui.add(controls, "changeFPS"); // resume function
         }
 
 
@@ -220,12 +235,11 @@
             document.addEventListener('keydown', onKeyDown, false); // listen to keyboard inputs
 
             ballMovement = new THREE.Vector2(Math.random() * .05, -0.05); // ball speed and movement
-
-            animate();
         }
 
 
         function animate() {
+<<<<<<< HEAD
             requestAnimationFrame(animate);
 
             if (delta > interval) {
@@ -243,6 +257,28 @@
             } else
                 delta += (clock.getDelta() * 1000) % interval;
         }
+=======
+			requestAnimationFrame(animate);
+			
+			now = Date.now();
+			delta = now - then;
+			
+			if (delta > interval) {
+
+				detectCollision();
+				ballAnimation(); // ball movements according to speed, direction
+
+				if (bricks.length == 0) // if there is no bricks left, the game is over!
+				{
+					gameWin();
+				}
+
+				render();
+				
+				then = now - (delta % interval);
+			}
+		}
+>>>>>>> b6bcce87a712f6dc740928bacde3c6afc3fea5e7
 
         function render() {
             stats.update();
