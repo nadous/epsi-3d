@@ -8,8 +8,8 @@
     <link rel="stylesheet" type="text/css" href="css/style.css">
 
 
-    <script src="lib/three.js/build/three.js"></script>
-    <script src="lib/three.js/examples/js/controls/OrbitControls.js"></script>
+    <script src="lib/three.js/three.js"></script>
+    <script src="lib/three.js/OrbitControls.js"></script>
     <script src="lib/d3/d3.js"></script>
     <script src="lib/topojson/topojson.js"></script>
     <script src="lib/papaparse/papaparse.js"></script>
@@ -20,6 +20,7 @@
     <div id="info">
         <h3>Interactive Maps - WebGL Demo</h3>
         <div id="msg">Mouseover a country...</div>
+        <div id="data_country"></div>
         <div>Click to rotate the globe</div>
     </div>
     <div id="loading">Loading...</div>
@@ -39,7 +40,7 @@
         var gMax;
 
         // utilisé pour regler la caméra
-        var controls;
+        var controls, cloudMesh, starBackground;
 
         // Pour papaparse, il est nécéssaire de recharger manuellement la librairie -> https://github.com/mholt/PapaParse/issues/148
         Papa.SCRIPT_PATH = "node_modules/papaparse/papaparse.js";
@@ -110,7 +111,7 @@
                 d3.select("#loading").transition().duration(500)
                     .style("opacity", 0).remove();
 
-                var currentCountry, overlay;
+                var currentCountry, overlay, overlay2, overlay3, tabOverlay;
 
                 // number of vertices. Higher = better mouse accuracy
                 // Vérifié. Passage de 155 en std à 200.
@@ -142,69 +143,44 @@
 
                 // add base map layer with all countries
                 // Besoin d'invervention ici. On va appliquer la couleur que l'on désire à chaque country
-                //console.log(countries);
-                let worldTexture = mapTextures(countries, map_number);
+                let worldTexture = mapTextures(countries, map_number, mapToHex);
                 let mapMaterial = new THREE.MeshPhongMaterial({
                     map: worldTexture,
                     transparent: true
                 });
+                mapMaterial.bumpMap   = THREE.ImageUtils.loadTexture('img/earthbump1k.jpg');
+                mapMaterial.bumpScale = 200.3;
                 var baseMap = new THREE.Mesh(new THREE.SphereGeometry(200, segments, segments), mapMaterial);
                 baseMap.rotation.y = Math.PI;
+
+                let geometry = new THREE.SphereGeometry(200.5, segments, segments);
+                let material = new THREE.MeshPhongMaterial({
+                    map: THREE.ImageUtils.loadTexture('img/fair_clouds_4k.png'),
+                    transparent: true,
+                    opacity: 0.8
+                });
+                cloudMesh = new THREE.Mesh(geometry, material);
+                cloudMesh.rotation.y = Math.PI;
+
+                let backgroundGeometry = new THREE.SphereGeometry(400, segments, segments);
+                let backgroundMaterial = new THREE.MeshPhongMaterial({
+                    map: THREE.ImageUtils.loadTexture('img/starB.png'),
+                    transparent: true,
+                    side: THREE.DoubleSide
+                });
+
+                starBackground = new THREE.Mesh(backgroundGeometry,backgroundMaterial);
+                starBackground.rotation.y = Math.PI;
 
                 // create a container node and add the two meshes
                 var root = new THREE.Object3D();
                 root.scale.set(2.5, 2.5, 2.5);
+
+
                 root.add(baseGlobe);
                 root.add(baseMap);
-
-
-                /*for (var i = 0; i < countries.features.length; i++) {
-                    var countrySelected = countries.features[i].id
-                    var valueCountry = gParsedCountryData[countrySelected];
-                    var hexaColor = '#ffffff';
-                    if (typeof valueCountry != 'undefined') {
-                        var co2_factor = valueCountry / gMax;
-                        if (co2_factor > .75) {
-                            hexaColor = rgbToHex(100, 0, 0);
-                        } else if (co2_factor > .5) {
-                            var variation = map_number(co2_factor, .5, .75, 255, 100);
-                            hexaColor = rgbToHex(Math.round(variation), 0, 0);
-                        } else if (co2_factor > .25) {
-                            var variation = map_number(co2_factor, .5, .75, 77, 0);
-                            hexaColor = rgbToHex(255, Math.round(variation), Math.round(variation));
-                        } else if (co2_factor > 0) {
-                            var green = map_number(co2_factor, 0, .25, 179, 100);
-                            hexaColor = rgbToHex(0, Math.round(green), 0);
-                        } else //pas de valeur
-                        {
-                          hexaColor = rgbToHex(255, 255, 255);
-                        }
-                    }
-                    var countryTexture = textureCache(countries.features[i].id, hexaColor);
-                    var countryMaterialaterial = new THREE.MeshPhongMaterial({
-                        map: countryTexture,
-                        transparent: true
-                    });
-                    //var base = new THREE.Mesh(new THREE.SphereGeometry(201, 40, 40), material);
-                    var baseCountry = new THREE.Mesh(new THREE.SphereGeometry(200, 40, 40), countryMaterial);
-                    baseCountry.rotation.y = Math.PI;
-                    root.add(baseCountry);
-                }*/
-
-
-                //console.log(gParsedCountryData[countries.features[5].id]);
-                /*let countryTexture = textureCache(countries.features[5].id, '#ffffff');
-                let countryMaterial = new THREE.MeshPhongMaterial({
-                    map: countryTexture,
-                    transparent: true
-                });
-                var baseCountry = new THREE.Mesh(new THREE.SphereGeometry(200, segments, segments), countryMaterial);
-                baseCountry.rotation.y = Math.PI;
-                root.add(baseCountry);*/
-
-
-
-
+                root.add(cloudMesh);
+                root.add(starBackground);
                 scene.add(root);
 
                 function onGlobeClick(event) {
@@ -217,9 +193,11 @@
                         console.log("Pays rencontré -> ", country.code);
                     } else // si on cique en dehors du globe || n'est pas un pays
                     {
+                      /*
                         // Get new camera position
                         var temp = new THREE.Mesh();
                         temp.position.copy(convertToXYZ(latlng, 900));
+                        console.log(root.position);
                         temp.lookAt(root.position);
                         temp.rotateY(Math.PI);
 
@@ -236,6 +214,7 @@
 
                         var tweenRot = getTween.call(camera, 'rotation', temp.rotation);
                         d3.timer(tweenRot);
+                        */
                     }
                 }
 
@@ -255,40 +234,30 @@
 
                         // Update the html
                         d3.select("#msg").html(country.code);
+                        d3.select("#data_country").html("CO² emissions (kt) " + gParsedCountryData[country.code]);
 
                         // Overlay the selected country
                         //Il faut ici modifier la couleur lors de l'overlay
-                        var valueCountry = gParsedCountryData[country.code];
-                        var co2_factor = valueCountry / gMax;
-                        if (co2_factor > .75) {
-                            map = textureCache(country.code, rgbToHex(100, 0, 0));
-                        } else if (co2_factor > .5) {
-                            var variation = map_number(co2_factor, .5, .75, 255, 100);
-                            map = textureCache(country.code, rgbToHex(Math.round(variation), 0, 0));
-                        } else if (co2_factor > .25) {
-                            var variation = map_number(co2_factor, .5, .75, 77, 0);
-                            map = textureCache(country.code, rgbToHex(255, Math.round(variation), Math.round(variation)));
-                        } else if (co2_factor > 0) {
-                            var green = map_number(co2_factor, 0, .25, 179, 100);
-                            map = textureCache(country.code, rgbToHex(0, Math.round(green), 0));
-                        } else //pas de valeur
-                        {
-                            map = textureCache(country.code, rgbToHex(255, 255, 255));
-                        }
+                        var hexaColor = mapToHex(country.code);
+                        map = textureCache(country.code, hexaColor);
                         material = new THREE.MeshPhongMaterial({
                             map: map,
                             transparent: true
                         });
-                        if (!overlay) {
-                            overlay = new THREE.Mesh(new THREE.SphereGeometry(201, 40, 40), material);
-                            overlay.rotation.y = Math.PI;
-                            root.add(overlay);
+                        if (!tabOverlay) {
+                            tabOverlay = [];
+                            for (var i = 0; i < 10; i++) {
+                                tabOverlay[i] = new THREE.Mesh(new THREE.SphereGeometry(201 + i, 40, 40), material);
+                                tabOverlay[i].rotation.y = Math.PI;
+                                root.add(tabOverlay[i]);
+                            }
                         } else {
-                            overlay.material = material;
+                            for (var i = 0; i < 10; i++) {
+                                tabOverlay[i].material = material;
+                            }
                         }
                     }
                 }
-
                 setEvents(camera, [baseGlobe], 'click');
                 setEvents(camera, [baseGlobe], 'mousemove', 10);
             });
@@ -296,13 +265,46 @@
             function animate() {
                 requestAnimationFrame(animate);
                 controls.update();
-
+                if (typeof cloudMesh !== 'undefined' &&  typeof cloudMesh.rotation !== 'undefined' && typeof cloudMesh.rotation.y !== 'undefined'){
+                    cloudMesh.rotation.y += 0.0005;
+                }
                 renderer.render(scene, camera);
             }
 
             function map_number(n, in_min, in_max, out_min, out_max) {
                 return (n - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
             }
+
+            function mapToHex(countryId) {
+                var countrySelected = countryId;
+                var valueCountry = gParsedCountryData[countrySelected];
+                var hexaColor = '#ffffff';
+                if (typeof valueCountry != 'undefined') {
+                    var co2_factor = valueCountry / gMax;
+                    if (co2_factor > .75) {
+                        hexaColor = rgbToHex(75, 0, 0);
+                    } else if (co2_factor > .5) {
+                        var variation = map_number(co2_factor, .5, .75, 100, 75);
+                        hexaColor = rgbToHex(Math.round(variation), 0, 0);
+                    } else if (co2_factor > .25) {
+                        var variation = map_number(co2_factor, .5, .75, 180, 100);
+                        hexaColor = rgbToHex(Math.round(variation), 0, 0);
+                    } else if (co2_factor > .1) {
+                        var variation = map_number(co2_factor, 0, .25, 30, 0);
+                        hexaColor = rgbToHex(255, Math.round(variation), Math.round(variation));
+                    } else if (co2_factor > .01) {
+                        var variation = map_number(co2_factor, 0, .25, 100, 30);
+                        hexaColor = rgbToHex(255, Math.round(variation), Math.round(variation));
+                    } else if (co2_factor > 0) {
+                        hexaColor = rgbToHex(0, 255, 0);
+                    } else //pas de valeur
+                    {
+                        hexaColor = rgbToHex(255, 255, 255);
+                    }
+                }
+                return hexaColor;
+            }
+
             animate();
         }
     </script>

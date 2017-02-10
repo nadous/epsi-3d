@@ -41,7 +41,7 @@ function mapTexture(geojson, color) {
 	return texture;
 }
 
-function mapTextures(geojson, map_number) {
+function mapTextures(geojson, map_number, mapToHex) {
 	var texture, context, canvas;
 
 	canvas = d3.select("body").append("canvas")
@@ -60,32 +60,7 @@ function mapTextures(geojson, map_number) {
 	// dans la boucle
 	for (var i = 0; i < geojson.features.length; i++) {
     // on calcule la couleur souhaiter
-
-
-    var countrySelected = geojson.features[i].id
-    var valueCountry = gParsedCountryData[countrySelected];
-    var hexaColor = '#ffffff';
-    if (typeof valueCountry != 'undefined') {
-        var co2_factor = valueCountry / gMax;
-        if (co2_factor > .75) {
-            hexaColor = rgbToHex(100, 0, 0);
-        } else if (co2_factor > .5) {
-            var variation = map_number(co2_factor, .5, .75, 255, 100);
-            hexaColor = rgbToHex(Math.round(variation), 0, 0);
-        } else if (co2_factor > .25) {
-            var variation = map_number(co2_factor, .5, .75, 77, 0);
-            hexaColor = rgbToHex(255, Math.round(variation), Math.round(variation));
-        } else if (co2_factor > 0) {
-            var green = map_number(co2_factor, 0, .25, 179, 100);
-            hexaColor = rgbToHex(0, Math.round(green), 0);
-        } else //pas de valeur
-        {
-          hexaColor = rgbToHex(255, 255, 255);
-        }
-    }
-
-
-
+		var hexaColor = mapToHex(geojson.features[i].id);
 		context.fillStyle = hexaColor;
 		context.beginPath();
 		path(geojson.features[i]);
