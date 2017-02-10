@@ -12,7 +12,7 @@
     var windowHalfX = window.innerWidth / 2;
     var windowHalfY = window.innerHeight / 2;
 
-    // only global variables 
+    // only global variables
     window.words = [];
     window.bounds = [];
     window.definitions = [];
@@ -22,11 +22,10 @@
 
     // loading custom font
     var loader = new THREE.FontLoader();
-    loader.load('fonts/exo.json', function(font) {
+    loader.load('fonts/Exo.json', function(font) {
 
         init(font);
         window.font = font; // create global var
-        animate();
 
     });
 
@@ -67,9 +66,9 @@
 
         createWords(font, settings.word, settings.category, camera); // Create initial word
 
-        renderer = new THREE.CanvasRenderer({
+        renderer = new THREE.WebGLRenderer({
             alpha: true // make canvas transparent
-        }); 
+        });
 
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -106,7 +105,7 @@
             },
 
             size: {
-                value: 1
+                value: 20
             },
 
             particleCount: 500
@@ -130,6 +129,8 @@
         window.addEventListener('mousedown', onDocumentMouseDown, false);
         window.addEventListener('touchstart', onDocumentTouchStart, false);
         window.addEventListener('mousemove', onDocumentMouseMove, false);
+
+        animate();
     }
 
 
@@ -138,7 +139,7 @@
             size: 20, height: 0, curveSegments: 0,
             font: font
         });
-        
+
         firstWordGeometry.computeBoundingBox();
 
         var color;
@@ -168,16 +169,24 @@
             color = 0xFFFF00;
             url = "https://api.datamuse.com/words?max=10&md=d&rel_rhy=";
         }
-        
+
         // firstWordMaterial
-        var firstMaterial = new THREE.MultiMaterial([
-            new THREE.MeshBasicMaterial( { color: 0xFFFFFF })
-        ]);
+        // var firstMaterial = new THREE.MultiMaterial([
+        //     new THREE.MeshBasicMaterial( { color: 0xFFFFFF })
+        // ]);
+
 
         // Other world material
-        var material = new THREE.MultiMaterial([
-            new THREE.MeshBasicMaterial( { color: color })
-        ]);
+        // var material = new THREE.MultiMaterial([
+        //     new THREE.MeshBasicMaterial( { color: color })
+        // ]);
+
+
+        // Other world material
+        var material =  new THREE.MeshBasicMaterial( { color: color });
+
+        // firstWordMaterial
+        var firstMaterial = new THREE.MeshBasicMaterial( { color: 0xFFFFFF });
 
         // set max group to avoid fps freez when too many text are displayed on screen
         if (window.numberOfGroup >= 3) {
@@ -191,7 +200,7 @@
         // Creating firstWord
         var firstMesh = new THREE.Mesh(firstWordGeometry, firstMaterial);
         firstMesh.position.y = 0 - (numberOfGroup * 80);
-        
+
         group.add(firstMesh);
         $.ajax({
             url: url + word,
@@ -211,7 +220,7 @@
                     else if (data[i].score > 2000)
                         var fontSize = 12;
 
-                    var otherWordsGeometry = new THREE.TextGeometry( data[i].word, 
+                    var otherWordsGeometry = new THREE.TextGeometry( data[i].word,
                     {
                         size: fontSize, height: 0, curveSegments: 1,
                         font: font
@@ -280,7 +289,7 @@
                         break;
                     case "Suggestions":
                         window.wordsByCategory.Suggestions += data.length;
-                        break;                       
+                        break;
                     default:
                         window.wordsByCategory.SoundLike += data.length;
                         break;
@@ -309,7 +318,7 @@
 
     // Create cube around text for mouse collision and events
     function compute_bounds(mesh, addToScene) {
-        if (addToScene === undefined)   
+        if (addToScene === undefined)
             addToScene = false;
 
         var bounds = mesh.geometry.boundingBox;
@@ -317,7 +326,8 @@
         var geometry = new THREE.BoxGeometry(cubeSize.x, cubeSize.y, cubeSize.z);
 
         var material = new THREE.MeshBasicMaterial({
-            opacity: 0, // make cube transparent
+            opacity: 0,
+            transparent: true
         });
 
         var cube = new THREE.Mesh(geometry, material);
@@ -448,7 +458,7 @@
 
     function onDocumentMouseDown(event) {
         if (event.which == 1) { // Only for left mouse button
-            
+
             mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
             mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
 
@@ -466,5 +476,5 @@
 
         mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
         mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
-        
+
     }

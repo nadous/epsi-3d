@@ -16,30 +16,38 @@
         }
     </style>
 
-    <script src="../../three.js-master/build/three.js"></script>
+    <script src="../../three.js-master/build/three.min.js"></script>
     <script src="../../three.js-master/examples/js/controls/OrbitControls.js"></script>
+    <script src="../../three.js-master/examples/js/libs/stats.min.js"></script>
+    <script src="../../Physijs-master/physi.js"></script>
 
-    <script src="../../Physijs/physi.js"></script>
 
     <script type="text/javascript">
         /*
          * Configuration des dépendances
          */
-        Physijs.scripts.worker = '../../Physijs/physijs_worker.js';
-        Physijs.scripts.ammo = './../Physijs/examples/js/ammo.js';
+        Physijs.scripts.worker = '../../Physijs-master/physijs_worker.js';
+        Physijs.scripts.ammo = './../Physijs-master/ammo.js';
 
-        let renderer, scene, camera, controls;
+        let renderer, scene, camera, controls, stats;
         let moveX = 0,
             moveZ = 0;
-        let ball, board;
+        let ball, board, finish;
+
 
         /*
          * Taille des éléments
          */
         const part_size = 50; // taille des dalles
+<<<<<<< HEAD
+        const board_height = 5; // hauteur du plateau
+        const wall_height = 75; // hauteur des murs
+        const camera_height = 800;
+=======
         const board_height = 10; // hauteur du plateau
         const wall_height = 50; // hauteur des murs
         const camera_height = 600;
+>>>>>>> f9fc48863656f038e90e65dab44e6d9ba3768b86
         const board_rotation = new THREE.Vector3();
         const key_influence = .01;
         /*
@@ -66,6 +74,7 @@
         });
 
         function init() {
+
             renderer = new THREE.WebGLRenderer({
                 antialias: true
             });
@@ -82,6 +91,12 @@
             controls.dampingFactor = .1;
             controls.rotateSpeed = .1;
             controls.enablePan = false;
+
+            // SKYBOX/FOG
+            var skyBoxGeometry = new THREE.CubeGeometry( 10000, 10000, 10000 );
+            var skyBoxMaterial = new THREE.MeshBasicMaterial( { color: 0x9999ff, side: THREE.BackSide } );
+            var skyBox = new THREE.Mesh( skyBoxGeometry, skyBoxMaterial );
+            scene.add(skyBox);
 
             document.getElementById('container').appendChild(renderer.domElement);
             document.addEventListener('keydown', onKeyDown, false); // listen to keyboard inputs
@@ -106,6 +121,11 @@
             light.shadow.darkness = .7;
             scene.add(light);
 
+
+            stats = new Stats();
+            container.appendChild(stats.dom);
+            scene.add(stats);
+
             const material = Physijs.createMaterial(new THREE.MeshLambertMaterial({
                 color: 0xff0000
             }), .4, .6);
@@ -117,14 +137,20 @@
             board.__dirtyPosition = true;
 
             ball = new Physijs.SphereMesh(
-                new THREE.SphereGeometry(18, 32, 32),
+                new THREE.SphereGeometry(12, 20, 20),
                 material,
                 200 // la masse
             );
 
+<<<<<<< HEAD
+            ball.position.x = 265;
+            ball.position.y = 60;
+            ball.position.z = -70;
+=======
             ball.position.x = -260;
             ball.position.y = 300;
             ball.position.z = -320;
+>>>>>>> f9fc48863656f038e90e65dab44e6d9ba3768b86
 
             for (let i = 0; i < level.length; i++) {
                 for (let j = 0; j < level[i].length; j++) {
@@ -146,10 +172,44 @@
             scene.add(board);
             scene.add(ball);
 
+<<<<<<< HEAD
+
+
+
+=======
             scene.simulate();
+>>>>>>> f9fc48863656f038e90e65dab44e6d9ba3768b86
             render();
         }
 
+
+
+        function distanceVector( v1, v2 )
+        {
+            var dx = v1.x - v2.x;
+            var dy = v1.y - v2.y;
+            var dz = v1.z - v2.z;
+
+            return Math.sqrt( dx * dx + dy * dy + dz * dz );
+        }
+/*
+        x
+                :
+                238.2584228515625
+
+        z
+                :
+                -61.61924743652344
+
+
+
+        x
+                :
+                225
+
+        z
+                :
+                -75*/
         // creation du plan
         function addBoardPart(x, z, rows, cols) {
             const material = Physijs.createMaterial(new THREE.MeshLambertMaterial({
@@ -177,20 +237,20 @@
             const material = new THREE.MeshLambertMaterial({
                 color: 0xff0000,
             });
-            const finish = new Physijs.SphereMesh(
+            finish = new Physijs.SphereMesh(
                 new THREE.SphereGeometry(10, 16, 16),
                 material, 0);
 
             finish.position.x = x * part_size;
-            finish.position.y = 0;
+            finish.position.y = 10;
             finish.position.z = z * part_size;
 
-            finish.addEventListener('collision', function(object) {
+/*            finish.addEventListener('collision', function(object) {
                 alert('You win!');
-            });
-
+            });*/
             board.add(finish);
         }
+
 
         // creation de trou pour faire perdre le joueur
         function addWall(x, z, rows, cols) {
@@ -205,11 +265,16 @@
             cube.receiveShadow = true;
 
             cube.position.x = x * part_size;
+<<<<<<< HEAD
+            cube.position.y = (wall_height - board_height)* .5;
+=======
             cube.position.y = (wall_height - board_height) * .5;
+>>>>>>> f9fc48863656f038e90e65dab44e6d9ba3768b86
             cube.position.z = z * part_size;
 
             board.add(cube);
         }
+
 
         /*
          * Detect user inputs
@@ -233,6 +298,17 @@
 
         function render() {
             requestAnimationFrame(render);
+<<<<<<< HEAD
+            var dist = distanceVector(ball.position, finish.position);
+            if(dist <= 22)
+            {
+                window.alert("you win");
+            }
+
+
+            const current_rotation = board.rotation.clone();
+=======
+>>>>>>> f9fc48863656f038e90e65dab44e6d9ba3768b86
 
             if (board_rotation.length() > .000001) {
                 const current_rotation = board.rotation.clone();
@@ -250,8 +326,22 @@
                 board.setAngularVelocity(new THREE.Vector3());
             }
 
+<<<<<<< HEAD
+
+
+/*            if (ball.position.y <= -20) {
+                alert('You loose');
+                ball = null;
+                setTimeout('',5000);
+                init()
+            }*/
+
+            scene.simulate(undefined, 1);
+=======
             scene.simulate(undefined, 2);
+>>>>>>> f9fc48863656f038e90e65dab44e6d9ba3768b86
             controls.update();
+            stats.update();
             renderer.render(scene, camera);
         }
 
