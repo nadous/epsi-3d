@@ -1,7 +1,5 @@
-import d3 from 'd3';
-
 // adapted from memoize.js by @philogb and @addyosmani
-export function memoize(fn) {
+ function memoize(fn) {
   return function () {
     var args = Array.prototype.slice.call(arguments);
 
@@ -19,7 +17,7 @@ export function memoize(fn) {
   };
 }
 
-export function debounce(func, wait, immediate) {
+ function debounce(func, wait, immediate) {
   var timeout;
   return function() {
     var context = this, args = arguments;
@@ -38,7 +36,7 @@ export function debounce(func, wait, immediate) {
   };
 }
 
-export var getTween = function (prop, to, time) {
+ var getTween = function (prop, to, time) {
   time = time || 500;
   var node = this;
   var curr = node[prop];
