@@ -128,6 +128,11 @@
             renderer.render(scene, camera);
 			detectCollision(); // detect all collisions in game
             ballAnimation(); // ball movements according to speed, direction
+			
+			if(bricks.length == 0) // if there is no bricks left, the game is over!
+			{
+				gameWin();
+			}
         }
 
 		// initiate gameElements
@@ -228,7 +233,7 @@
 		* Detect user inputs
 		*/
 		function onKeyDown ( event ) {
-			var moveDistance = 0.2; // player speed
+			var moveDistance = 0.3; // player speed
 			
 			switch ( event.keyCode ) 
 			{	
@@ -316,6 +321,8 @@
 						
 						scene.remove(objectCollided); // remove the brick from scene
 						collidableMeshList.splice(collidableMeshList.indexOf(objectCollided),1); // remove brick from collidable objects
+						
+						bricks.splice(bricks.indexOf(objectCollided), 1);
 					}
 					
 					return; // if one of the vertex has collided, we know for sure that a collision is happening.		
@@ -353,6 +360,14 @@
 		* Function executed on gameOver
 		*/
 		function gameOver()
+		{
+			ballMovement = new THREE.Vector2(0,0); // stop ball
+		}
+		
+		/*
+		* Function executed on win
+		*/
+		function gameWin()
 		{
 			ballMovement = new THREE.Vector2(0,0); // stop ball
 		}
