@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Interactive Maps - WebGL Demo</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+
+
+    <script src="lib/three.js/build/three.js"></script>
+    <script src="lib/three.js/examples/js/controls/OrbitControls.js"></script>
+    <script src="lib/d3/d3.js"></script>
+    <script src="lib/topojson/topojson.js"></script>
+    <script src="lib/papaparse/papaparse.js"></script>
+
+</head>
+
+<body>
+    <div id="info">
+        <h3>Interactive Maps - WebGL Demo</h3>
+        <div id="msg">Mouseover a country...</div>
+        <div>Click to rotate the globe</div>
+    </div>
+    <div id="loading">Loading...</div>
+    <script>
+        var topology = topojson.topology({
+            foo: geojson
+        });
+    </script>
+    <script src="js/refractor/scene.js"></script>
+    <script src="js/refractor/setEvents.js"></script>
+    <script src="js/refractor/geoHelpers.js"></script>
+    <script src="js/refractor/mapTexture.js"></script>
+    <script src="js/refractor/utils.js"></script>
+    <script>
+        var gParsedCountryData;
+        var gMin;
+        var gMax;
+
+        // utilisé pour regler la caméra
+        var controls;
+
+        // Pour papaparse, il est nécéssaire de recharger manuellement la librairie -> https://github.com/mholt/PapaParse/issues/148
+        Papa.SCRIPT_PATH = "node_modules/papaparse/papaparse.js";
+        // Appel de la fonction de parsing avec callback pour transmettre les données
+        parseData("../../data/data_co2.csv", doStuff);
+
+
+
+        // On parse les données et on récupère le taux d'emission min et max de l'ensemble des pays
+        function parseData(url, callBack) {
+            Papa.parse(url, {
+                delimiter: ",",
+                header: true,
+                download: true,
+                complete: function(results, file) {
+                    var result = [];
+                    var min = Number.POSITIVE_INFINITY;
+                    var max = Number.NEGATIVE_INFINITY;
+                    for (var i = 0; i < results.data.length; i++) {
+                        //init
+                        var item = results.data[i];
+                        var cntryName = item["Country Name"];
+                        var data2013 = item["2013"];
+                        result[cntryName] = data2013;
+                        // Besoin de faire une vérification car certaines données sont absentes
+                        if (data2013 != "") {
+                            min = Math.min(min, data2013);
+                            max = Math.max(max, data2013);
+                        }
+                    }
+                    console.log("valeur mini: ", min);
+                    console.log("valeur maxi: ", max);
+                    //Appel du callBack et demarrage du programme
+                    callBack(result, min, max);
+                }
+            });
+        }
+
+        // Complete le code hexa d'une couleur par des zero
+        function componentToHex(c) {
+            var hex = c.toString(16);
+            return hex.length == 1 ? "0" + hex : hex;
+        }
+
+        // Transforme un code RGB en hexadecimal
+        function rgbToHex(r, g, b) {
+            return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+        }
+
+
+        // Fonction callback qui execute la quasi totalité du script
+        function doStuff(parsedCountryData, minEmissionCntry, maxEmissionCntry) {
+            gParsedCountryData = parsedCountryData;
+            gMin = minEmissionCntry;
+            gMax = maxEmissionCntry;
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = .1;
+            controls.rotateSpeed = .1;
+            controls.enableZoom = false;
+
+            // Chargement de la carte avec les identifiants par pays. A voir à l'intérieur.
+            // On remarque qu'on définit des arcs de points pour les pays
+            // format: {"type":"MultiPolygon","arcs":[[[6,7,8,9]],[[10,11,12]]],"id":"Angola"}
+            d3.json('data/world.json', function(err, data) {
+
+                d3.select("#loading").transition().duration(500)
+                    .style("opacity", 0).remove();
+
+                var currentCountry, overlay;
+
+                // number of vertices. Higher = better mouse accuracy
+                // Vérifié. Passage de 155 en std à 200.
+                var segments = 200;
+
+                // Setup cache for country textures
+                var countries = topojson.feature(data, data.objects.countries);
+                var geo = geodecoder(countries.features);
+
+                // Script embarqué à l'init. A priori pas besoin de le modifier.
+                // On va initialiser le cache de la texture lors du mouseOver
+                var textureCache = memoize(
+                    function(cntryID, color) {
+                        var country = geo.find(cntryID);
+                        return mapTexture(country, color);
+                    }
+                );
+
+                // Base globe with blue "water"
+                let blueMaterial = new THREE.MeshPhongMaterial({
+                    color: '#2B3B59',
+                    transparent: true
+                });
+                let sphere = new THREE.SphereGeometry(200, segments, segments);
+                let baseGlobe = new THREE.Mesh(sphere, blueMaterial);
+                baseGlobe.rotation.y = Math.PI;
+                baseGlobe.addEventListener('click', onGlobeClick);
+                baseGlobe.addEventListener('mousemove', onGlobeMousemove);
+
+                // add base map layer with all countries
+                // Besoin d'invervention ici. On va appliquer la couleur que l'on désire à chaque country
+                //console.log(countries);
+                let worldTexture = mapTextures(countries, map_number);
+                let mapMaterial = new THREE.MeshPhongMaterial({
+                    map: worldTexture,
+                    transparent: true
+                });
+                var baseMap = new THREE.Mesh(new THREE.SphereGeometry(200, segments, segments), mapMaterial);
+                baseMap.rotation.y = Math.PI;
+
+                // create a container node and add the two meshes
+                var root = new THREE.Object3D();
+                root.scale.set(2.5, 2.5, 2.5);
+                root.add(baseGlobe);
+                root.add(baseMap);
+
+
+                /*for (var i = 0; i < countries.features.length; i++) {
+                    var countrySelected = countries.features[i].id
+                    var valueCountry = gParsedCountryData[countrySelected];
+                    var hexaColor = '#ffffff';
+                    if (typeof valueCountry != 'undefined') {
+                        var co2_factor = valueCountry / gMax;
+                        if (co2_factor > .75) {
+                            hexaColor = rgbToHex(100, 0, 0);
+                        } else if (co2_factor > .5) {
+                            var variation = map_number(co2_factor, .5, .75, 255, 100);
+                            hexaColor = rgbToHex(Math.round(variation), 0, 0);
+                        } else if (co2_factor > .25) {
+                            var variation = map_number(co2_factor, .5, .75, 77, 0);
+                            hexaColor = rgbToHex(255, Math.round(variation), Math.round(variation));
+                        } else if (co2_factor > 0) {
+                            var green = map_number(co2_factor, 0, .25, 179, 100);
+                            hexaColor = rgbToHex(0, Math.round(green), 0);
+                        } else //pas de valeur
+                        {
+                          hexaColor = rgbToHex(255, 255, 255);
+                        }
+                    }
+                    var countryTexture = textureCache(countries.features[i].id, hexaColor);
+                    var countryMaterialaterial = new THREE.MeshPhongMaterial({
+                        map: countryTexture,
+                        transparent: true
+                    });
+                    //var base = new THREE.Mesh(new THREE.SphereGeometry(201, 40, 40), material);
+                    var baseCountry = new THREE.Mesh(new THREE.SphereGeometry(200, 40, 40), countryMaterial);
+                    baseCountry.rotation.y = Math.PI;
+                    root.add(baseCountry);
+                }*/
+
+
+                //console.log(gParsedCountryData[countries.features[5].id]);
+                /*let countryTexture = textureCache(countries.features[5].id, '#ffffff');
+                let countryMaterial = new THREE.MeshPhongMaterial({
+                    map: countryTexture,
+                    transparent: true
+                });
+                var baseCountry = new THREE.Mesh(new THREE.SphereGeometry(200, segments, segments), countryMaterial);
+                baseCountry.rotation.y = Math.PI;
+                root.add(baseCountry);*/
+
+
+
+
+                scene.add(root);
+
+                function onGlobeClick(event) {
+                    // Get pointc, convert to latitude/longitude
+                    var latlng = getEventCenter.call(this, event);
+                    // on recherche si on a cliquer sur un pays
+                    var country = geo.search(latlng[0], latlng[1]);
+                    // si on clique sur un pays
+                    if (country !== null) {
+                        console.log("Pays rencontré -> ", country.code);
+                    } else // si on cique en dehors du globe || n'est pas un pays
+                    {
+                        // Get new camera position
+                        var temp = new THREE.Mesh();
+                        temp.position.copy(convertToXYZ(latlng, 900));
+                        temp.lookAt(root.position);
+                        temp.rotateY(Math.PI);
+
+                        for (let key in temp.rotation) {
+                            if (temp.rotation[key] - camera.rotation[key] > Math.PI) {
+                                temp.rotation[key] -= Math.PI * 2;
+                            } else if (camera.rotation[key] - temp.rotation[key] > Math.PI) {
+                                temp.rotation[key] += Math.PI * 2;
+                            }
+                        }
+
+                        var tweenPos = getTween.call(camera, 'position', temp.position);
+                        d3.timer(tweenPos);
+
+                        var tweenRot = getTween.call(camera, 'rotation', temp.rotation);
+                        d3.timer(tweenRot);
+                    }
+                }
+
+                function onGlobeMousemove(event) {
+                    var map, material;
+
+                    // Get pointc, convert to latitude/longitude
+                    var latlng = getEventCenter.call(this, event);
+
+                    // Look for country at that latitude/longitude
+                    var country = geo.search(latlng[0], latlng[1]);
+
+                    if (country !== null && country.code !== currentCountry) {
+
+                        // Track the current country displayed
+                        currentCountry = country.code;
+
+                        // Update the html
+                        d3.select("#msg").html(country.code);
+
+                        // Overlay the selected country
+                        //Il faut ici modifier la couleur lors de l'overlay
+                        var valueCountry = gParsedCountryData[country.code];
+                        var co2_factor = valueCountry / gMax;
+                        if (co2_factor > .75) {
+                            map = textureCache(country.code, rgbToHex(100, 0, 0));
+                        } else if (co2_factor > .5) {
+                            var variation = map_number(co2_factor, .5, .75, 255, 100);
+                            map = textureCache(country.code, rgbToHex(Math.round(variation), 0, 0));
+                        } else if (co2_factor > .25) {
+                            var variation = map_number(co2_factor, .5, .75, 77, 0);
+                            map = textureCache(country.code, rgbToHex(255, Math.round(variation), Math.round(variation)));
+                        } else if (co2_factor > 0) {
+                            var green = map_number(co2_factor, 0, .25, 179, 100);
+                            map = textureCache(country.code, rgbToHex(0, Math.round(green), 0));
+                        } else //pas de valeur
+                        {
+                            map = textureCache(country.code, rgbToHex(255, 255, 255));
+                        }
+                        material = new THREE.MeshPhongMaterial({
+                            map: map,
+                            transparent: true
+                        });
+                        if (!overlay) {
+                            overlay = new THREE.Mesh(new THREE.SphereGeometry(201, 40, 40), material);
+                            overlay.rotation.y = Math.PI;
+                            root.add(overlay);
+                        } else {
+                            overlay.material = material;
+                        }
+                    }
+                }
+
+                setEvents(camera, [baseGlobe], 'click');
+                setEvents(camera, [baseGlobe], 'mousemove', 10);
+            });
+
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+
+                renderer.render(scene, camera);
+            }
+
+            function map_number(n, in_min, in_max, out_min, out_max) {
+                return (n - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+            }
+            animate();
+        }
+    </script>
+</body>
+
+</html>
