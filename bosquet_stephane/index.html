@@ -286,6 +286,7 @@
 				if (bricks.length == 0) // if there is no bricks left, the game is over!
 				{
 					gameWin();
+					location.reload();
 				}
 				
 				stats.update(); // refresh framerate state
@@ -448,6 +449,9 @@
 			camera.lookAt(new THREE.Vector3(0,0,0)); // look at center
 			
 			particleGroup.triggerPoolEmitter(3, ball.position);
+			
+			alert("Game over... Click on restart to try again");
+			ball.position.y += 0.3;
         }
 
         /*
@@ -455,6 +459,7 @@
          */
         function gameWin() {
             ballMovement = new THREE.Vector2(0, 0); // stop ball
+			alert("You win! Congratulations!");
         }
 
         // utility
