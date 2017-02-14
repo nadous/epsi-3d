@@ -18,7 +18,13 @@
     window.definitions = [];
     window.totalWordGenerated = 0;
     window.numberOfGroup = 0;
-    window.wordsByCategory = {Synonyms: 0, Antonyms: 0, Rhymes: 0, Suggestions: 0, SoundLike: 0};
+    window.wordsByCategory = {
+        Synonyms: 0,
+        Antonyms: 0,
+        Rhymes: 0,
+        Suggestions: 0,
+        SoundLike: 0
+    };
 
     // loading custom font
     var loader = new THREE.FontLoader();
@@ -26,7 +32,6 @@
 
         init(font);
         window.font = font; // create global var
-        initParticles();
     });
 
     var emitterSettings = {
@@ -36,16 +41,16 @@
             radius: 1,
         },
         velocity: {
-            value: new THREE.Vector3( 100 )
+            value: new THREE.Vector3(100)
         },
         size: {
-            value: [ 30, 0 ]
+            value: [30, 0]
         },
         opacity: {
             value: [1, 0]
         },
         color: {
-            value: [new THREE.Color('orange'),new THREE.Color('red')]
+            value: [new THREE.Color('orange'), new THREE.Color('red')]
         },
         particleCount: 100,
         alive: true,
@@ -81,13 +86,13 @@
 
         particleGroup = new SPE.Group({
             texture: {
-                value: THREE.ImageUtils.loadTexture('./images/smokeparticle.png')
+                value: new THREE.TextureLoader().load('./images/smokeparticle.png')
             },
             blending: THREE.AdditiveBlending,
             maxParticleCount: 1000
         });
 
-        particleGroup.addPool( 10, emitterSettings, false );
+        particleGroup.addPool(10, emitterSettings, false);
 
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
@@ -97,7 +102,7 @@
 
         scene = new THREE.Scene();
 
-        camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+        camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
         camera.position.set(200, -100, 600);
 
         createWords(font, settings.word, settings.category, camera); // Create initial word
@@ -111,7 +116,8 @@
         container.appendChild(renderer.domElement);
 
         // Add particle group to scene.
-        scene.add( particleGroup.mesh );
+        particleGroup.mesh.frustumCulled = false;
+        scene.add(particleGroup.mesh);
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
@@ -135,9 +141,13 @@
 
     function createWords(font, word, category, camera) {
         var firstWordGeometry = new THREE.TextGeometry(word, {
-            size: 20, height: 6, curveSegments: 3,
+            size: 20,
+            height: 6,
+            curveSegments: 3,
             font: font,
-            bevelThickness: 1, bevelSize: 2, bevelEnabled: true,
+            bevelThickness: 1,
+            bevelSize: 2,
+            bevelEnabled: true,
         });
 
         firstWordGeometry.computeBoundingBox();
@@ -145,42 +155,46 @@
         var color;
 
         // API calls by category
-        if (category == "Synonyms")
-        {
+        if (category == "Synonyms") {
             url = "https://api.datamuse.com/words?max=10&md=d&rel_syn=";
             color = 0xFF99FF;
-        }
-        else if (category == "Antonyms")
-        {
+        } else if (category == "Antonyms") {
             url = "https://api.datamuse.com/words?max=10&md=d&rel_ant=";
             color = 0x00FF00;
-        }
-        else if (category == "Suggestions"){
+        } else if (category == "Suggestions") {
             url = "https://api.datamuse.com/sug?max=10&md=d&s=";
             color = 0xFF9933;
-        }
-        else if (category == "SoundLike")
-        {
+        } else if (category == "SoundLike") {
             url = "https://api.datamuse.com/words?max=10&md=d&sl=";
             color = 0xFF3300;
-        }
-        else
-        {
+        } else {
             color = 0xFFFF00;
             url = "https://api.datamuse.com/words?max=10&md=d&rel_rhy=";
         }
 
         // firstWordMaterial
-        var firstMaterial = new THREE.MultiMaterial( [
-            new THREE.MeshBasicMaterial( { color: 0xFFFFFF, overdraw: 0.5 } ),
-            new THREE.MeshBasicMaterial( { color: 0x000000, overdraw: 0.5 } )
-        ] );
+        var firstMaterial = new THREE.MultiMaterial([
+            new THREE.MeshBasicMaterial({
+                color: 0xFFFFFF,
+                overdraw: 0.5
+            }),
+            new THREE.MeshBasicMaterial({
+                color: 0x000000,
+                overdraw: 0.5
+            })
+        ]);
 
         // Other world material
-        var material = new THREE.MultiMaterial( [
-            new THREE.MeshBasicMaterial( { color: color, overdraw: 0.5 } ),
-            new THREE.MeshBasicMaterial( { color: 0x000000, overdraw: 0.5 } )
-        ] );
+        var material = new THREE.MultiMaterial([
+            new THREE.MeshBasicMaterial({
+                color: color,
+                overdraw: 0.5
+            }),
+            new THREE.MeshBasicMaterial({
+                color: 0x000000,
+                overdraw: 0.5
+            })
+        ]);
 
         // set max group to avoid fps freez when too many text are displayed on screen
         if (window.numberOfGroup >= 5) {
@@ -214,11 +228,14 @@
                     else if (data[i].score > 2000)
                         var fontSize = 11;
 
-                    var otherWordsGeometry = new THREE.TextGeometry( data[i].word,
-                    {
-                        size: fontSize, height: 1, curveSegments: 1,
+                    var otherWordsGeometry = new THREE.TextGeometry(data[i].word, {
+                        size: fontSize,
+                        height: 1,
+                        curveSegments: 1,
                         font: font,
-                        bevelThickness: 0.5, bevelSize: 0.5, bevelEnabled: true,
+                        bevelThickness: 0.5,
+                        bevelSize: 0.5,
+                        bevelEnabled: true,
                     });
 
                     otherWordsGeometry.computeVertexNormals(); // Reducing text geometry lag
@@ -301,30 +318,14 @@
         scene.add(group);
     }
 
-    // Create particle group and emitter
-    function initParticles() {
-        particleGroup = new SPE.Group({
-            texture: {
-                value: THREE.ImageUtils.loadTexture('./images/smokeparticle.png')
-            },
-            blending: THREE.AdditiveBlending,
-            maxParticleCount: 1000
-        });
-
-        particleGroup.addPool( 10, emitterSettings, false );
-
-        // Add particle group to scene.
-        scene.add( particleGroup.mesh );
-    }
-
-    function renderPanelInfo(){
-            $("#totalSynonyms").text(window.wordsByCategory.Synonyms + " Synonyms");
-            $("#totalAntonyms").text(window.wordsByCategory.Antonyms + " Antonyms");
-            $("#totalRhymes").text(window.wordsByCategory.Rhymes + " Rhymes");
-            $("#totalSuggestions").text(window.wordsByCategory.Suggestions + " Suggestions");
-            $("#totalSoundLike").text(window.wordsByCategory.SoundLike + " SoundLike");
-            $("#totalWords").text(window.totalWordGenerated + " in total");
-            $("#currentWords").text(window.bounds.length + " in the scene");
+    function renderPanelInfo() {
+        $("#totalSynonyms").text(window.wordsByCategory.Synonyms + " Synonyms");
+        $("#totalAntonyms").text(window.wordsByCategory.Antonyms + " Antonyms");
+        $("#totalRhymes").text(window.wordsByCategory.Rhymes + " Rhymes");
+        $("#totalSuggestions").text(window.wordsByCategory.Suggestions + " Suggestions");
+        $("#totalSoundLike").text(window.wordsByCategory.SoundLike + " SoundLike");
+        $("#totalWords").text(window.totalWordGenerated + " in total");
+        $("#currentWords").text(window.bounds.length + " in the scene");
     }
 
     // Create cube around text for mouse collision and events
@@ -377,7 +378,13 @@
         window.words = [];
         window.definitions = [];
         window.bounds = [];
-        window.wordsByCategory = {Synonyms: 0, Antonyms: 0, Rhymes: 0, Suggestions: 0, SoundLike: 0};
+        window.wordsByCategory = {
+            Synonyms: 0,
+            Antonyms: 0,
+            Rhymes: 0,
+            Suggestions: 0,
+            SoundLike: 0
+        };
         renderPanelInfo();
         scene.children.slice().forEach(function(obj) {
             $("#currentWords").text("0 in the scene");
@@ -396,7 +403,7 @@
     }
 
     function render() {
-        particleGroup.tick( clock.getDelta() );
+        particleGroup.tick(clock.getDelta());
         renderer.render(scene, camera);
         raycaster.setFromCamera(mouse, camera);
 
@@ -409,8 +416,8 @@
                 if (value.name == intersects[0].object.name) {
                     $("#wordDefTitle").text(value.name + " definitions");
                     for (var i = 0; i < 3; i++) {
-                        if(value.definitions !== undefined){
-                            if(value.definitions[i] !== undefined){
+                        if (value.definitions !== undefined) {
+                            if (value.definitions[i] !== undefined) {
                                 var splittedText = value.definitions[i].split("\t"); // splitting tab character
                                 $("#definitionPanel").show();
                                 if (splittedText[0] == "n") {
@@ -439,17 +446,16 @@
         }
     }
 
-    function resizeText(toggle, object){
-        if(toggle){
+    function resizeText(toggle, object) {
+        if (toggle) {
             var text = object;
             text.scale.z = 1.5;
-            text.scale.y= 1.5;
+            text.scale.y = 1.5;
             text.scale.x = 1.5;
-        }
-        else{
+        } else {
             var text = object;
             text.scale.z = 1;
-            text.scale.y= 1;
+            text.scale.y = 1;
             text.scale.x = 1;
         }
 
@@ -461,6 +467,7 @@
 
         event.clientX = event.touches[0].clientX;
         event.clientY = event.touches[0].clientY;
+
         onDocumentMouseDown(event);
 
     }
@@ -473,10 +480,10 @@
 
             raycaster.setFromCamera(mouse, camera);
 
-            var intersects = raycaster.intersectObjects(window.bounds);  // Check collision with text bounds
+            var intersects = raycaster.intersectObjects(window.bounds); // Check collision with text bounds
 
             if (intersects.length > 0) { // Collision detected
-                particleGroup.triggerPoolEmitter(10, (intersects[0].object.position)); // play particles on object position
+                particleGroup.triggerPoolEmitter(10, intersects[0].object.position); // play particles on object position
                 createWords(window.font, intersects[0].object.name, window.settings.category); // Word generation based on text clicked
             }
         }
