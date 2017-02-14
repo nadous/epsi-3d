@@ -26,8 +26,34 @@
 
         init(font);
         window.font = font; // create global var
-
+        initParticles();
     });
+
+    var emitterSettings = {
+        type: SPE.distributions.SPHERE,
+        position: {
+            spread: new THREE.Vector3(10),
+            radius: 1,
+        },
+        velocity: {
+            value: new THREE.Vector3( 100 )
+        },
+        size: {
+            value: [ 30, 0 ]
+        },
+        opacity: {
+            value: [1, 0]
+        },
+        color: {
+            value: [new THREE.Color('orange'),new THREE.Color('red')]
+        },
+        particleCount: 100,
+        alive: true,
+        duration: 0.06,
+        maxAge: {
+            value: 0.6
+        }
+    };
 
     function init(font) {
 
@@ -53,6 +79,16 @@
         gui.add(settings, 'generate');
         gui.add(settings, 'reset');
 
+        particleGroup = new SPE.Group({
+            texture: {
+                value: THREE.ImageUtils.loadTexture('./images/smokeparticle.png')
+            },
+            blending: THREE.AdditiveBlending,
+            maxParticleCount: 1000
+        });
+
+        particleGroup.addPool( 10, emitterSettings, false );
+
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
 
@@ -62,7 +98,7 @@
         scene = new THREE.Scene();
 
         camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
-        camera.position.set(200, 0, 400);
+        camera.position.set(200, -100, 600);
 
         createWords(font, settings.word, settings.category, camera); // Create initial word
 
@@ -74,44 +110,7 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         container.appendChild(renderer.domElement);
 
-        particleGroup = new SPE.Group({
-            texture: {
-                value: THREE.ImageUtils.loadTexture('./images/smokeparticle.png')
-            },
-            maxParticleCount: 1000
-        });
-
-        emitter = new SPE.Emitter({
-            maxAge: {
-                value: 2
-            },
-            position: {
-                value: new THREE.Vector3(0, 0, -50),
-                spread: new THREE.Vector3( 0, 0, 0 )
-            },
-
-            acceleration: {
-                value: new THREE.Vector3(0, -10, 0),
-                spread: new THREE.Vector3( 10, 0, 10 )
-            },
-
-            velocity: {
-                value: new THREE.Vector3(0, 25, 0),
-                spread: new THREE.Vector3(10, 7.5, 10)
-            },
-
-            color: {
-                value: [ new THREE.Color('white'), new THREE.Color('red') ]
-            },
-
-            size: {
-                value: 20
-            },
-
-            particleCount: 500
-        });
-
-        particleGroup.addEmitter( emitter );
+        // Add particle group to scene.
         scene.add( particleGroup.mesh );
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -119,7 +118,7 @@
         controls.dampingFactor = .1;
         controls.rotateSpeed = .1;
 
-        controls.target.set(275, -225, -100); // initial controls position set to default word generation
+        controls.target.set(350, -325, -100); // initial controls position set to default word generation
         controls.update();
 
         stats = new Stats();
@@ -136,8 +135,9 @@
 
     function createWords(font, word, category, camera) {
         var firstWordGeometry = new THREE.TextGeometry(word, {
-            size: 20, height: 0, curveSegments: 0,
-            font: font
+            size: 20, height: 6, curveSegments: 3,
+            font: font,
+            bevelThickness: 1, bevelSize: 2, bevelEnabled: true,
         });
 
         firstWordGeometry.computeBoundingBox();
@@ -171,25 +171,19 @@
         }
 
         // firstWordMaterial
-        // var firstMaterial = new THREE.MultiMaterial([
-        //     new THREE.MeshBasicMaterial( { color: 0xFFFFFF })
-        // ]);
-
-
-        // Other world material
-        // var material = new THREE.MultiMaterial([
-        //     new THREE.MeshBasicMaterial( { color: color })
-        // ]);
-
+        var firstMaterial = new THREE.MultiMaterial( [
+            new THREE.MeshBasicMaterial( { color: 0xFFFFFF, overdraw: 0.5 } ),
+            new THREE.MeshBasicMaterial( { color: 0x000000, overdraw: 0.5 } )
+        ] );
 
         // Other world material
-        var material =  new THREE.MeshBasicMaterial( { color: color });
-
-        // firstWordMaterial
-        var firstMaterial = new THREE.MeshBasicMaterial( { color: 0xFFFFFF });
+        var material = new THREE.MultiMaterial( [
+            new THREE.MeshBasicMaterial( { color: color, overdraw: 0.5 } ),
+            new THREE.MeshBasicMaterial( { color: 0x000000, overdraw: 0.5 } )
+        ] );
 
         // set max group to avoid fps freez when too many text are displayed on screen
-        if (window.numberOfGroup >= 3) {
+        if (window.numberOfGroup >= 5) {
             window.numberOfGroup = 0;
             destroyWords();
         }
@@ -210,20 +204,21 @@
                 for (var i = 0; i < data.length; i++) {
                     // Resize text by word pertinence
                     if (data[i].score >= 10 && data[i].score < 150)
-                        var fontSize = 5;
-                    else if (data[i].score >= 150 && data[i].score < 500)
                         var fontSize = 6;
-                    else if (data[i].score >= 500 && data[i].score <= 1000)
+                    else if (data[i].score >= 150 && data[i].score < 500)
                         var fontSize = 7;
+                    else if (data[i].score >= 500 && data[i].score <= 1000)
+                        var fontSize = 9;
                     else if (data[i].score >= 1000 && data[i].score <= 2000)
-                        var fontSize = 8;
+                        var fontSize = 10;
                     else if (data[i].score > 2000)
-                        var fontSize = 12;
+                        var fontSize = 11;
 
                     var otherWordsGeometry = new THREE.TextGeometry( data[i].word,
                     {
-                        size: fontSize, height: 0, curveSegments: 1,
-                        font: font
+                        size: fontSize, height: 1, curveSegments: 1,
+                        font: font,
+                        bevelThickness: 0.5, bevelSize: 0.5, bevelEnabled: true,
                     });
 
                     otherWordsGeometry.computeVertexNormals(); // Reducing text geometry lag
@@ -247,7 +242,7 @@
                     } else { // Placing others word
                         mesh.position.x = previousMesh.position.x + (previousWord.length * 10);
                         mesh.position.y = firstMesh.position.y + 2 * (i + 1);
-                        mesh.position.z = previousMesh.position.z - 20;
+                        mesh.position.z = previousMesh.position.z - 10;
 
                         // Line creation for connecting two word
                         var lineGeometry = new THREE.Geometry();
@@ -304,6 +299,22 @@
             }
         });
         scene.add(group);
+    }
+
+    // Create particle group and emitter
+    function initParticles() {
+        particleGroup = new SPE.Group({
+            texture: {
+                value: THREE.ImageUtils.loadTexture('./images/smokeparticle.png')
+            },
+            blending: THREE.AdditiveBlending,
+            maxParticleCount: 1000
+        });
+
+        particleGroup.addPool( 10, emitterSettings, false );
+
+        // Add particle group to scene.
+        scene.add( particleGroup.mesh );
     }
 
     function renderPanelInfo(){
@@ -385,7 +396,6 @@
     }
 
     function render() {
-
         particleGroup.tick( clock.getDelta() );
         renderer.render(scene, camera);
         raycaster.setFromCamera(mouse, camera);
@@ -405,7 +415,7 @@
                                 $("#definitionPanel").show();
                                 if (splittedText[0] == "n") {
                                     $("#type" + i).text("name");
-                                } else if (splittedText[0] == "n") {
+                                } else if (splittedText[0] == "v") {
                                     $("#type" + i).text("verb");
                                 } else {
                                     $("#type" + i).text(splittedText[0]);
@@ -430,7 +440,6 @@
     }
 
     function resizeText(toggle, object){
-
         if(toggle){
             var text = object;
             text.scale.z = 1.5;
@@ -467,6 +476,7 @@
             var intersects = raycaster.intersectObjects(window.bounds);  // Check collision with text bounds
 
             if (intersects.length > 0) { // Collision detected
+                particleGroup.triggerPoolEmitter(10, (intersects[0].object.position)); // play particles on object position
                 createWords(window.font, intersects[0].object.name, window.settings.category); // Word generation based on text clicked
             }
         }
