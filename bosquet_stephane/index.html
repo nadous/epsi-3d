@@ -28,6 +28,7 @@
     <script src="../../three.js-master/examples/js/libs/stats.min.js"></script>
     <script src="../../three.js-master/examples/js/controls/OrbitControls.js"></script>
     <script src="../../three.js-master/examples/js/libs/dat.gui.min.js"></script>
+	<script src="../../three.js-master/examples/js/loaders/OBJLoader.js"></script>
 	<script src="js/SPE.min.js"></script>
 
     <script>
@@ -93,7 +94,7 @@
 
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            // renderer.setClearColor(0xffffff);
+            renderer.setClearColor(0x404040);
             container.appendChild(renderer.domElement);
 
             stats = new Stats();
@@ -106,25 +107,25 @@
                 var ballMovementOnPause;
                 var pause = false;
 
-                this.pause = function() {
+                this.pause = function() { // pause the game
                     pause = true;
                     ballMovementOnPause = ballMovement;
                     ballMovement = new THREE.Vector2(0, 0);
                 };
 
-                this.resume = function() {
+                this.resume = function() { // resume the game if it is already paused
                     if (pause) {
                         ballMovement = ballMovementOnPause;
                         pause = false;
                     }
                 };
 
-                this.restart = function() {
+                this.restart = function() { // restart the game
                     removeAllElement();
                     gameElementInit();
                 };
 				
-				this.changeFPS = function(){
+				this.changeFPS = function(){ // switch between 30 or 60 fps mode
 					fps = (fps == 60 ? 30 : 60);
 					interval = 1000/fps;
 				};
@@ -142,7 +143,7 @@
 			
 			particleGroup = new SPE.Group({
         		texture: {
-                    value: THREE.ImageUtils.loadTexture('img/star.png')
+                    value: new THREE.TextureLoader().load('img/star.png')
                 },
 				maxParticleCount: 600
         	});
@@ -155,63 +156,38 @@
 
         // initiate gameElements
         function gameElementInit() {
-            // LEFT AND RIGHT WALLS
-            var wallGeometry = new THREE.BoxGeometry(.5, 8, .5);
-            var wallMaterial = new THREE.MeshBasicMaterial({
-                color: 0xffffff
-            });
+			// load level OBJ
+			var objLoader = new THREE.OBJLoader();
+			objLoader.load("model/level.obj", function ( object ) {                        
+				// Load and apply texture
+				var meshMaterial = new THREE.MeshPhongMaterial({ transparent: false, map: new THREE.TextureLoader().load('./img/brick.jpg') });		
 
-            var leftWall = new THREE.Mesh(wallGeometry, wallMaterial);
-            leftWall.position.set(-5, 0, 0);
-            leftWall.name = "leftRight"; // usefull during collisions
-
-            scene.add(leftWall);
-            collidableMeshList.push(leftWall);
-
-            var rightWall = new THREE.Mesh(wallGeometry, wallMaterial);
-            rightWall.position.set(5, 0, 0);
-            rightWall.name = "leftRight"; // usefull during collisions
-
-            scene.add(rightWall);
-            collidableMeshList.push(rightWall);
-
-
-            // TOP AND BOTTOW WALL
-            wallGeometry = new THREE.BoxGeometry(10, .5, .5);
-            wallMaterial = new THREE.MeshBasicMaterial({
-                color: 0xffffff
-            });
-
-            var topWall = new THREE.Mesh(wallGeometry, wallMaterial);
-            topWall.position.set(0, 4, 0);
-            topWall.name = "topWall"; // usefull during collisions
-
-            scene.add(topWall);
-            collidableMeshList.push(topWall);
-
-            var bottomWall = new THREE.Mesh(wallGeometry, wallMaterial);
-            bottomWall.position.set(0, -4, 0);
-            bottomWall.name = "bottomWall"; // usefull during collisions
-
-            scene.add(bottomWall);
-            collidableMeshList.push(bottomWall);
+				// add all walls
+				object.children[0].material = meshMaterial;
+				object.children[1].material = meshMaterial;
+				object.children[2].material = meshMaterial;
+				object.children[3].material = meshMaterial;
+				
+				object.scale.set(0.7,0.7,0.7);
+				collidableMeshList.push(object); // add object to collidable list
+				
+				scene.add(object);
+			});
 
             // BRICKS
+			var cubeGeometry = new THREE.BoxGeometry(.7, .3, .5); // instanciate geometry once as it will be the same for each cube
+			var cubeMaterial = new THREE.MeshPhongMaterial( { map: new THREE.TextureLoader().load('img/brick.jpg') } ); // instanciate material once as it will be the same for each cube
+			
             for (var x = -3; x <= 3; x++) {
-                for (var y = 0; y < 5; y++) {
-                    var cubeGeometry = new THREE.BoxGeometry(.7, .3, .5);
-                    var cubeMaterial = new THREE.MeshBasicMaterial({
-                        color: 0xffffff
-                    });
-
+                for (var y = 0; y < 4; y++) {	
                     var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
                     cube.position.set(x, y, 0);
 
-                    cube.name = "brick";
+                    cube.name = "brick"; // set object name
 
                     scene.add(cube);
                     collidableMeshList.push(cube);
-                    bricks.push(cube);
+                    bricks.push(cube); // add cube to cube list
                 }
             }
 
@@ -387,10 +363,10 @@
                 var directionVector = globalVertex.sub(ball.position);
 
                 var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
-                var collisionResults = ray.intersectObjects(collidableMeshList);
+                var collisionResults = ray.intersectObjects(collidableMeshList, true);
                 if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
                     var objectCollided = collisionResults[0].object; // the collided object
-
+					
                     if (objectCollided.name == "player") { // if collided object is player
                         var barSize = new THREE.Vector2(objectCollided.geometry.parameters.width, objectCollided.geometry.parameters.height);
                         var xFactor = map_number(ball.position.x,
@@ -402,18 +378,24 @@
                         ballMovement.x += xFactor;
                     }
 
-                    if (objectCollided.name == "leftRight") { // if collided object is left or right wall
+                    if (objectCollided.name == "topWall_topCube") // if collided object is top wall
+                    {
+                        ballMovement.y = ballMovement.y * -1;
+                    }
+
+                    if (objectCollided.name == "bottomWall_bottomCube") // if collided object is bottom wall
+                    {
+                        gameOver(); // the game is lost when the ball touches the bottom
+                    }
+					
+					if (objectCollided.name == "leftWall_leftCube") // if collided object is left wall
+                    {
                         ballMovement.x = ballMovement.x * -1;
                     }
 
-                    if (objectCollided.name == "topWall") // if collided object is top wall
+                    if (objectCollided.name == "rightWall_rightCube") // if collided object is right wall
                     {
-                        ballMovement.y = ballMovement.y * -1
-                    }
-
-                    if (objectCollided.name == "bottomWall") // if collided object is bottom wall
-                    {
-                        gameOver(); // the game is lost when the ball touches the bottom
+                        ballMovement.x = ballMovement.x * -1;
                     }
 
                     if (objectCollided.name == "brick") { // if collided object is a brick
