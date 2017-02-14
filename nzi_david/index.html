@@ -14,13 +14,40 @@
             width: 100%;
             height: 100%;
         }
+
+        .nav{
+            background-color: blue;
+            height: 90px;
+        }
+        .compte {
+            float: left;
+            color: white;
+            margin-left: 25px;
+        }
+        .title{
+            float: right;
+            margin-right: 285px;
+        }
+        .boxScore {
+            float: right;
+            margin-right: 25px;
+            color: white;
+        }
+
+
     </style>
 
     <script src="../../three.js-master/build/three.min.js"></script>
     <script src="../../three.js-master/examples/js/controls/OrbitControls.js"></script>
     <script src="../../three.js-master/examples/js/libs/stats.min.js"></script>
+<<<<<<< HEAD
+    <script src="../../Physijs-master/physi.js"></script>
+    <script src="../../leapjs-master/leap-0.6.4.js"></script>
+
+=======
     <!-- <script src="../../Physijs-master/physi.js"></script> -->
     <script src="../../Physijs/physi.js"></script>
+>>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
 
 
     <script type="text/javascript">
@@ -36,17 +63,18 @@
         let moveX = 0,
             moveZ = 0;
         let ball, board, finish;
+        
 
 
         /*
          * Taille des éléments
          */
         const part_size = 50; // taille des dalles
-        const board_height = 5; // hauteur du plateau
+        const board_height = 15; // hauteur du plateau
         const wall_height = 75; // hauteur des murs
         const camera_height = 800;
         const board_rotation = new THREE.Vector3();
-        const key_influence = .01;
+        const key_influence = .001;
         /*
          * Le labyrinthe
          */
@@ -82,7 +110,7 @@
             });
             scene.setGravity(new THREE.Vector3(0, -500, 0));
 
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000);
             camera.position.set(0, camera_height, 0);
 
             controls = new THREE.OrbitControls(camera);
@@ -101,7 +129,7 @@
             scene.add(skyBox);
 
             document.getElementById('container').appendChild(renderer.domElement);
-            document.addEventListener('keydown', onKeyDown, false); // listen to keyboard inputs
+            document.addEventListener('keyup', onKeyUp, false); // listen to keyboard inputs
 
             init_maze();
         }
@@ -125,8 +153,12 @@
 
 
             stats = new Stats();
+<<<<<<< HEAD
+            //container.appendChild(stats.dom);
+=======
             container.appendChild(stats.dom);
             // scene.add(stats);
+>>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
 
             const material = Physijs.createMaterial(new THREE.MeshLambertMaterial({
                 color: 0xff0000
@@ -139,14 +171,14 @@
             board.__dirtyPosition = true;
 
             ball = new Physijs.SphereMesh(
-                new THREE.SphereGeometry(12, 20, 20),
+                new THREE.SphereGeometry(20, 32, 32),
                 material,
                 200 // la masse
             );
 
-            ball.position.x = 265;
-            ball.position.y = 60;
-            ball.position.z = -70;
+            ball.position.x = -288;
+            ball.position.y = 10;
+            ball.position.z = -325;
 
             for (let i = 0; i < level.length; i++) {
                 for (let j = 0; j < level[i].length; j++) {
@@ -155,6 +187,7 @@
                     switch (level[i][j]) {
                         case 0:
                             addBoardPart(x, y, level.length, level[i].length);
+                            addBoardwroof(x, y, level.length, level[i].length);
                             break;
                         case 1:
                             addWall(x, y, level.length, level[i].length);
@@ -166,11 +199,6 @@
                 }
             }
             scene.add(board);
-            scene.add(ball);
-
-
-
-
             render();
         }
 
@@ -183,6 +211,9 @@
 
             return Math.sqrt(dx * dx + dy * dy + dz * dz);
         }
+<<<<<<< HEAD
+
+=======
         /*
                 x
                         :
@@ -201,6 +232,7 @@
                 z
                         :
                         -75*/
+>>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
         // creation du plan
         function addBoardPart(x, z, rows, cols) {
             const material = Physijs.createMaterial(new THREE.MeshLambertMaterial({
@@ -220,7 +252,24 @@
 
             board.add(cube);
         }
+        //creatoin du toit
+        function addBoardwroof(x, z, rows, cols) {
+            const material = Physijs.createMaterial(new THREE.MeshLambertMaterial({
+                color: 0xffffff, transparent: true, opacity: 0.5
+            }), .4, .6);
+            const cube = new Physijs.BoxMesh(
+                    new THREE.CubeGeometry(part_size, 1, part_size),
+                    material, 0);
 
+            cube.receiveShadow = true;
+            cube.castShadow = true;
+
+            cube.position.x = x * part_size;
+            cube.position.y = 60;
+            cube.position.z = z * part_size;
+
+            board.add(cube);
+        }
         // creation du mur qui nous fait gagner
         function addFinish(x, z, rows, cols) {
             addBoardPart(x, z, rows, cols);
@@ -270,42 +319,94 @@
         /*
          * Detect user inputs
          */
-        function onKeyDown(event) {
+        function onKeyUp(event) {
             switch (event.keyCode) {
                 case 37: // left arrow
-                    board_rotation.z += key_influence;
+                    board_rotation.z += key_influence * 10;
                     break;
                 case 38: // up arrow
-                    board_rotation.x -= key_influence;
+                    board_rotation.x -= key_influence * 10;
                     break;
                 case 39:
-                    board_rotation.z -= key_influence; // right arrow
+                    board_rotation.z -= key_influence * 10; // right arrow
                     break;
                 case 40: // down arrow
-                    board_rotation.x += key_influence;
+                    board_rotation.x += key_influence * 10;
+                    break;
+                case 32: // espace
+                    scene.add(ball);
+                    timer = setInterval('decompte()',1000);
                     break;
             }
         }
+        var timer;
+        var compte = 60;
+        var score = 1500;
+        function decompte()
+        {
+            if(compte <= 1) {
+                pluriel = "";
+            } else {
+                pluriel = "s";
+            }
+
+            document.getElementById("compt").innerHTML = compte + " seconde" + pluriel;
+            document.getElementById("score").innerHTML = "Votre score est de :" + score;
+
+            if(compte == 0 || compte < 0) {
+                compte = 0;
+
+                clearInterval(timer);
+            }
+            score -= 25;
+            compte--;
+        }
+
+
 
         function render() {
             requestAnimationFrame(render);
             var dist = distanceVector(ball.position, finish.position);
+<<<<<<< HEAD
+            if(dist <= 22)
+            {
+                console.log("You win");
+                alert("You win, vous avez un score de : "+score);
+                setTimeout(location.reload(),50000);
+            }
+
+=======
 
             if (dist <= 22) {
                 console.log('you win on test');
             }
             
+>>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
             const current_rotation = board.rotation.clone();
 
-            current_rotation.x += board_rotation.x;
+/*            current_rotation.x += board_rotation.x;
             current_rotation.y += board_rotation.y;
-            current_rotation.z += board_rotation.z;
+            current_rotation.z += board_rotation.z;*/
+
+            current_rotation.x = board_rotation.x;
+            current_rotation.z = board_rotation.z;
 
             board_rotation.multiplyScalar(.9);
 
             board.rotation.set(current_rotation.x, 0, current_rotation.z);
             board.__dirtyRotation = true;
 
+<<<<<<< HEAD
+
+
+            if (ball.position.y <= -1000 || compte == 0) {
+                console.log("You loose");
+                alert("You loose");
+                location.reload();
+            }
+
+=======
+>>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
             scene.simulate(undefined, 1);
             controls.update();
             stats.update();
@@ -315,11 +416,74 @@
         function map_number(n, in_min, in_max, out_min, out_max) {
             return (n - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
         }
+
+
+
+
+        //add leap-motion
+        var controller = new Leap.Controller({enableGestures: true});
+        console.log(controller);
+        var handZ = 0;
+        var handX = 0;
+        controller.loop(function(frame) {
+            latestFrame = frame;
+
+            for (var i in frame.handsMap) {
+                var hand = frame.handsMap[i];
+
+                /*if(hand.roll() > 0.3){
+                    board_rotation.z += key_influence;
+                }
+                if(hand.roll() < -0.3){
+                    board_rotation.z -= key_influence;
+                }
+                if(hand.pitch() > 0.4){
+                    board_rotation.x += key_influence;
+                }
+                if(hand.pitch() < -0.4){
+                    board_rotation.x -= key_influence;
+                }*/
+                handZ = hand.roll();
+                handX = hand.pitch();
+
+                board_rotation.z = hand.roll();
+                board_rotation.x = hand.pitch();
+
+            }
+        });
+        //Controller Display Hand object data
+        controller.on('ready', function() {
+            console.log("ready");
+        });
+        controller.on('connect', function() {
+            console.log("connect");
+        });
+        controller.on('disconnect', function() {
+            console.log("disconnect");
+        });
+        controller.on('focus', function() {
+            console.log("focus");
+        });
+        controller.on('blur', function() {
+            console.log("blur");
+        });
+        controller.on('deviceConnected', function() {
+            console.log("deviceConnected");
+        });
+        controller.on('deviceDisconnected', function() {
+            console.log("deviceDisconnected");
+        });
+
     </script>
 </head>
 
-<body>
-    <div id="container"></div>
+<body onload="decompte();">
+    <div class="nav">
+        <h2 class="compte" id="compt"></h2>
+        <h2 class="boxScore" id="score"></h2>
+        <h1 class="title">Le petit labyrinthe de tes morts</h1>
+    </div>
+    <div  id="container"></div>
 </body>
 
 </html>
