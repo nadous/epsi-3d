@@ -52,6 +52,7 @@
         var bricks = []; // the bricks! nasty bricks...
         var ballMovement = new THREE.Vector2(Math.random() * .05, -0.05); // ball speed and movement
         var BALL_MAX_SPEED = .25; // the ball can't go faster than
+		var start = false;
 		
 		// COLLISION
         var collidableMeshList = []; // the mesh that ball can collide with
@@ -275,8 +276,11 @@
 			delta = now - then;
 			
 			if (delta > interval) { // refresh the render
-				detectCollision(); // detect collision between ball and the rest of the scene
-				ballAnimation(); // ball movements according to speed, direction
+			
+				if(start){
+					detectCollision(); // detect collision between ball and the rest of the scene
+					ballAnimation(); // ball movements according to speed, direction
+				}
 
 				if (bricks.length == 0) // if there is no bricks left, the game is over!
 				{
@@ -289,6 +293,8 @@
 				
 				then = now - (delta % interval);
 			}
+			
+			start = true; // this is used to let time to render once before detecing collisions and animating the ball
 		}
 
         function render() {
