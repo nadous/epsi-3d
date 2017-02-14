@@ -15,47 +15,40 @@
             height: 100%;
         }
 
-        .nav{
+        .nav {
             background-color: blue;
             height: 90px;
         }
+
         .compte {
             float: left;
             color: white;
             margin-left: 25px;
         }
-        .title{
+
+        .title {
             float: right;
             margin-right: 285px;
         }
+
         .boxScore {
             float: right;
             margin-right: 25px;
             color: white;
         }
-
-
     </style>
 
     <script src="../../three.js-master/build/three.min.js"></script>
     <script src="../../three.js-master/examples/js/controls/OrbitControls.js"></script>
     <script src="../../three.js-master/examples/js/libs/stats.min.js"></script>
-<<<<<<< HEAD
-    <script src="../../Physijs-master/physi.js"></script>
-    <script src="../../leapjs-master/leap-0.6.4.js"></script>
 
-=======
-    <!-- <script src="../../Physijs-master/physi.js"></script> -->
+    <!-- <script src="../../Physijs-master/physi.js"></script>
+    <script src="../../leapjs-master/leap-0.6.4.js"></script> -->
+
     <script src="../../Physijs/physi.js"></script>
->>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
-
+    <script src="../../leapjs/leap-0.6.4.min.js"></script>
 
     <script type="text/javascript">
-        /*
-         * Configuration des dépendances
-         */
-        // Physijs.scripts.worker = '../../Physijs-master/physijs_worker.js';
-        // Physijs.scripts.ammo = './../Physijs-master/ammo.js';
         Physijs.scripts.worker = '../../Physijs/physijs_worker.js';
         Physijs.scripts.ammo = './../Physijs/examples/js/ammo.js';
 
@@ -63,8 +56,6 @@
         let moveX = 0,
             moveZ = 0;
         let ball, board, finish;
-        
-
 
         /*
          * Taille des éléments
@@ -73,8 +64,9 @@
         const board_height = 15; // hauteur du plateau
         const wall_height = 75; // hauteur des murs
         const camera_height = 800;
+
         const board_rotation = new THREE.Vector3();
-        const key_influence = .001;
+        var last_frame = null;
         /*
          * Le labyrinthe
          */
@@ -129,7 +121,7 @@
             scene.add(skyBox);
 
             document.getElementById('container').appendChild(renderer.domElement);
-            document.addEventListener('keyup', onKeyUp, false); // listen to keyboard inputs
+            document.addEventListener('keyup', onKeyUp, false);
 
             init_maze();
         }
@@ -153,12 +145,7 @@
 
 
             stats = new Stats();
-<<<<<<< HEAD
-            //container.appendChild(stats.dom);
-=======
             container.appendChild(stats.dom);
-            // scene.add(stats);
->>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
 
             const material = Physijs.createMaterial(new THREE.MeshLambertMaterial({
                 color: 0xff0000
@@ -202,8 +189,6 @@
             render();
         }
 
-
-
         function distanceVector(v1, v2) {
             var dx = v1.x - v2.x;
             var dy = v1.y - v2.y;
@@ -211,28 +196,7 @@
 
             return Math.sqrt(dx * dx + dy * dy + dz * dz);
         }
-<<<<<<< HEAD
 
-=======
-        /*
-                x
-                        :
-                        238.2584228515625
-
-                z
-                        :
-                        -61.61924743652344
-
-
-
-                x
-                        :
-                        225
-
-                z
-                        :
-                        -75*/
->>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
         // creation du plan
         function addBoardPart(x, z, rows, cols) {
             const material = Physijs.createMaterial(new THREE.MeshLambertMaterial({
@@ -255,11 +219,13 @@
         //creatoin du toit
         function addBoardwroof(x, z, rows, cols) {
             const material = Physijs.createMaterial(new THREE.MeshLambertMaterial({
-                color: 0xffffff, transparent: true, opacity: 0.5
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.5
             }), .4, .6);
             const cube = new Physijs.BoxMesh(
-                    new THREE.CubeGeometry(part_size, 1, part_size),
-                    material, 0);
+                new THREE.CubeGeometry(part_size, 1, part_size),
+                material, 0);
 
             cube.receiveShadow = true;
             cube.castShadow = true;
@@ -316,35 +282,19 @@
         }
 
 
-        /*
-         * Detect user inputs
-         */
         function onKeyUp(event) {
-            switch (event.keyCode) {
-                case 37: // left arrow
-                    board_rotation.z += key_influence * 10;
-                    break;
-                case 38: // up arrow
-                    board_rotation.x -= key_influence * 10;
-                    break;
-                case 39:
-                    board_rotation.z -= key_influence * 10; // right arrow
-                    break;
-                case 40: // down arrow
-                    board_rotation.x += key_influence * 10;
-                    break;
-                case 32: // espace
-                    scene.add(ball);
-                    timer = setInterval('decompte()',1000);
-                    break;
+            if (event.keyCode == 32) {
+                scene.add(ball);
+                timer = setInterval('decompte()', 1000);
             }
         }
+
         var timer;
         var compte = 60;
         var score = 1500;
-        function decompte()
-        {
-            if(compte <= 1) {
+
+        function decompte() {
+            if (compte <= 1) {
                 pluriel = "";
             } else {
                 pluriel = "s";
@@ -353,7 +303,7 @@
             document.getElementById("compt").innerHTML = compte + " seconde" + pluriel;
             document.getElementById("score").innerHTML = "Votre score est de :" + score;
 
-            if(compte == 0 || compte < 0) {
+            if (compte == 0 || compte < 0) {
                 compte = 0;
 
                 clearInterval(timer);
@@ -362,42 +312,23 @@
             compte--;
         }
 
-
-
         function render() {
             requestAnimationFrame(render);
             var dist = distanceVector(ball.position, finish.position);
-<<<<<<< HEAD
-            if(dist <= 22)
-            {
-                console.log("You win");
-                alert("You win, vous avez un score de : "+score);
-                setTimeout(location.reload(),50000);
-            }
 
-=======
+            if (dist <= 22) {
+                console.log("You win");
+                alert("You win, vous avez un score de : " + score);
+                setTimeout(location.reload(), 50000);
+            }
 
             if (dist <= 22) {
                 console.log('you win on test');
             }
-            
->>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
-            const current_rotation = board.rotation.clone();
 
-/*            current_rotation.x += board_rotation.x;
-            current_rotation.y += board_rotation.y;
-            current_rotation.z += board_rotation.z;*/
-
-            current_rotation.x = board_rotation.x;
-            current_rotation.z = board_rotation.z;
-
-            board_rotation.multiplyScalar(.9);
-
-            board.rotation.set(current_rotation.x, 0, current_rotation.z);
+            board_rotation.multiplyScalar(.95);
+            board.rotation.set(board_rotation.x, 0, board_rotation.z);
             board.__dirtyRotation = true;
-
-<<<<<<< HEAD
-
 
             if (ball.position.y <= -1000 || compte == 0) {
                 console.log("You loose");
@@ -405,9 +336,7 @@
                 location.reload();
             }
 
-=======
->>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
-            scene.simulate(undefined, 1);
+            scene.simulate(undefined, 4);
             controls.update();
             stats.update();
             renderer.render(scene, camera);
@@ -417,40 +346,30 @@
             return (n - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
         }
 
-
-
+        function frame_to_vector3(frame) {
+            return new THREE.Vector3(frame.pitch(), frame.yaw(), frame.roll());
+        }
 
         //add leap-motion
-        var controller = new Leap.Controller({enableGestures: true});
-        console.log(controller);
-        var handZ = 0;
-        var handX = 0;
+        var controller = new Leap.Controller({
+            enableGestures: true
+        });
+
         controller.loop(function(frame) {
-            latestFrame = frame;
+            if (frame.hands.length > 0) {
+                if (last_frame) {
+                    const current_hand = frame_to_vector3(frame.hands[0]);
+                    const last_hand = frame_to_vector3(last_frame.hands[0]);
 
-            for (var i in frame.handsMap) {
-                var hand = frame.handsMap[i];
+                    const diff_rotation = new THREE.Vector3().subVectors(current_hand, last_hand);
 
-                /*if(hand.roll() > 0.3){
-                    board_rotation.z += key_influence;
+                    board_rotation.add(diff_rotation);
                 }
-                if(hand.roll() < -0.3){
-                    board_rotation.z -= key_influence;
-                }
-                if(hand.pitch() > 0.4){
-                    board_rotation.x += key_influence;
-                }
-                if(hand.pitch() < -0.4){
-                    board_rotation.x -= key_influence;
-                }*/
-                handZ = hand.roll();
-                handX = hand.pitch();
 
-                board_rotation.z = hand.roll();
-                board_rotation.x = hand.pitch();
-
+                last_frame = frame;
             }
         });
+
         //Controller Display Hand object data
         controller.on('ready', function() {
             console.log("ready");
@@ -473,7 +392,6 @@
         controller.on('deviceDisconnected', function() {
             console.log("deviceDisconnected");
         });
-
     </script>
 </head>
 
@@ -483,7 +401,7 @@
         <h2 class="boxScore" id="score"></h2>
         <h1 class="title">Le petit labyrinthe de tes morts</h1>
     </div>
-    <div  id="container"></div>
+    <div id="container"></div>
 </body>
 
 </html>
