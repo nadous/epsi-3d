@@ -41,6 +41,11 @@ function mapTexture(geojson, color) {
 	return texture;
 }
 
+
+/**
+ * Fonction ajoutée
+ * Elle permet de générer pour chaque pays une couleure qui lui sera affectée.
+ */
 function mapTextures(geojson, map_number, mapToHex) {
 	var texture, context, canvas;
 
@@ -57,26 +62,17 @@ function mapTextures(geojson, map_number, mapToHex) {
 
 	context.strokeStyle = "#333";
 	context.lineWidth = 1;
-	// dans la boucle
+	// Pour chaque pays, on va lui calculer sa couleur et l'ajouter au canvas
 	for (var i = 0; i < geojson.features.length; i++) {
-    // on calcule la couleur souhaiter
+		// on calcule la couleur souhaiter
 		var hexaColor = mapToHex(geojson.features[i].id);
 		context.fillStyle = hexaColor;
 		context.beginPath();
 		path(geojson.features[i]);
-		//path(geojson);
-		//if (color) {
-			context.fill();
-		//}
+		context.fill();
 		context.stroke();
 	}
-	// DEBUGGING - Really expensive, disable when done.
-	// console.log(canvas.node().toDataURL());
-
 	texture = new THREE.Texture(canvas.node());
 	texture.needsUpdate = true;
-
-	// canvas.remove();
-
 	return texture;
 }

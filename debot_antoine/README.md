@@ -1,21 +1,14 @@
-# webgl-globes
+# Gblobe CO2 Emission
 
 
-Demo interactive globes using THREE.js and D3.js.  Written entirely in ES6 modules.  The demos use SystemJS and Babel to load into the browser.
+Demo interactive utilisant THREE.js et D3.js.
 
+Pour lancer la démo, il faut se positionner dans le dossier racine du projet "debot_antoine" et lancer un serveur local:
 
-To run the demos, type npm install in the root folder to get the dependencies for the demos. Run a local server from the root folder.
-
-
-```html
-clone or copy the repo
-cd into the folder
-npm install
-python -m SimpleHTTPServer 8000 (or your favorite local server)
+```
+http-server ./ (ou votre serveur local préféré)
 ```
 
-<img src="img/demo1.png" height="250px"/>
-<img src="img/demo2.png" height="250px"/>
-<img src="img/demo3.png" height="250px"/>
-<img src="img/demo4.png" height="250px"/>
+Mettez le son !
 
+<img src="img/demo1.jpg" height="250px"/>

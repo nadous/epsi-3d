@@ -2,33 +2,30 @@
 <html>
 
 <head>
-    <title>Interactive Maps - WebGL Demo</title>
+    <title>Interactive Maps - Globe CO²</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
     <link rel="stylesheet" type="text/css" href="css/style.css">
 
-
+	<!-- Inclusion des librairie nécessaires  -->
     <script src="lib/three.js/three.js"></script>
-    <script src="lib/three.js/OrbitControls.js"></script>
-    <script src="lib/d3/d3.js"></script>
+    <script src="lib/three.js/OrbitControls.js"></script> <!-- script aidan au déplacement d'objets webgl -->
+	<script src="lib/three.js/stats.min.js"></script>
+    <script src="lib/d3/d3.js"></script>				  
     <script src="lib/topojson/topojson.js"></script>
     <script src="lib/papaparse/papaparse.js"></script>
 
 </head>
 
 <body>
+<iframe width="0" height="0" src="https://www.youtube.com/embed/UDVtMYqUAyw?autoplay=1" frameborder="0" allowfullscreen></iframe>
     <div id="info">
-        <h3>Interactive Maps - WebGL Demo</h3>
+        <h3>Interactive Maps - Globe CO²</h3>
         <div id="msg">Mouseover a country...</div>
         <div id="data_country"></div>
         <div>Click to rotate the globe</div>
     </div>
     <div id="loading">Loading...</div>
-    <script>
-        var topology = topojson.topology({
-            foo: geojson
-        });
-    </script>
     <script src="js/refractor/scene.js"></script>
     <script src="js/refractor/setEvents.js"></script>
     <script src="js/refractor/geoHelpers.js"></script>
@@ -39,8 +36,7 @@
         var gMin;
         var gMax;
 
-        // utilisé pour regler la caméra
-        var controls, cloudMesh, starBackground;
+        var controls, cloudMesh, starBackground, stats;
 
         // Pour papaparse, il est nécéssaire de recharger manuellement la librairie -> https://github.com/mholt/PapaParse/issues/148
         Papa.SCRIPT_PATH = "node_modules/papaparse/papaparse.js";
@@ -49,7 +45,9 @@
 
 
 
-        // On parse les données et on récupère le taux d'emission min et max de l'ensemble des pays
+        /**
+		 * On parse les données et on récupère le taux d'emission min et max de l'ensemble des pays
+		 */
         function parseData(url, callBack) {
             Papa.parse(url, {
                 delimiter: ",",
@@ -79,23 +77,35 @@
             });
         }
 
-        // Complete le code hexa d'une couleur par des zero
+        /**
+		 * Complete le code hexa d'une couleur par des zero
+		 */
         function componentToHex(c) {
             var hex = c.toString(16);
             return hex.length == 1 ? "0" + hex : hex;
         }
 
-        // Transforme un code RGB en hexadecimal
+        /**
+		 * Transforme un code RGB en hexadecimal
+		 */
         function rgbToHex(r, g, b) {
             return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
         }
 
 
-        // Fonction callback qui execute la quasi totalité du script
+        // Fonction callback du parsing qui execute la quasi totalité du script
         function doStuff(parsedCountryData, minEmissionCntry, maxEmissionCntry) {
+		
+			// On garde en local les données relatives aux taux d'emmission
+			// gParsedCountryData : tableaux avec les données d'emission de CO²
+			// gMin : Le minimum de CO² émis par un pays
+			// gMax : Le maximum de CO² émis par un pays
             gParsedCountryData = parsedCountryData;
             gMin = minEmissionCntry;
             gMax = maxEmissionCntry;
+
+			stats = new Stats();
+			container.appendChild(stats.dom);
 
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
@@ -103,7 +113,7 @@
             controls.rotateSpeed = .1;
             controls.enableZoom = false;
 
-            // Chargement de la carte avec les identifiants par pays. A voir à l'intérieur.
+            // Chargement de la carte avec les identifiants par pays.
             // On remarque qu'on définit des arcs de points pour les pays
             // format: {"type":"MultiPolygon","arcs":[[[6,7,8,9]],[[10,11,12]]],"id":"Angola"}
             d3.json('data/world.json', function(err, data) {
@@ -121,7 +131,7 @@
                 var countries = topojson.feature(data, data.objects.countries);
                 var geo = geodecoder(countries.features);
 
-                // Script embarqué à l'init. A priori pas besoin de le modifier.
+                // Script embarqué à l'init.
                 // On va initialiser le cache de la texture lors du mouseOver
                 var textureCache = memoize(
                     function(cntryID, color) {
@@ -130,7 +140,9 @@
                     }
                 );
 
+				// ============================================================================
                 // Base globe with blue "water"
+				// ============================================================================
                 let blueMaterial = new THREE.MeshPhongMaterial({
                     color: '#2B3B59',
                     transparent: true
@@ -140,9 +152,13 @@
                 baseGlobe.rotation.y = Math.PI;
                 baseGlobe.addEventListener('click', onGlobeClick);
                 baseGlobe.addEventListener('mousemove', onGlobeMousemove);
+				// ============================================================================
 
+
+				// ============================================================================
                 // add base map layer with all countries
-                // Besoin d'invervention ici. On va appliquer la couleur que l'on désire à chaque country
+                // J'ai ajouté ici une bumpMap pour donner du relief à la carte
+				// ============================================================================
                 let worldTexture = mapTextures(countries, map_number, mapToHex);
                 let mapMaterial = new THREE.MeshPhongMaterial({
                     map: worldTexture,
@@ -152,7 +168,13 @@
                 mapMaterial.bumpScale = 200.3;
                 var baseMap = new THREE.Mesh(new THREE.SphereGeometry(200, segments, segments), mapMaterial);
                 baseMap.rotation.y = Math.PI;
+				// ============================================================================
 
+				
+				// ============================================================================
+				// Création du mesh, material et sphère pour les nuages
+				// L'image/texture a déjà un niveau d'alpha donc nous ne gérons pas la transparance avec Three 
+				// ============================================================================
                 let geometry = new THREE.SphereGeometry(200.5, segments, segments);
                 let material = new THREE.MeshPhongMaterial({
                     map: THREE.ImageUtils.loadTexture('img/fair_clouds_4k.png'),
@@ -161,22 +183,29 @@
                 });
                 cloudMesh = new THREE.Mesh(geometry, material);
                 cloudMesh.rotation.y = Math.PI;
+				// ============================================================================
 
+				
+				// ============================================================================
+				// Création du mesh, material et sphère du fond de la démo
+				// On dessine une sphère plus grande que l'affichage et on display l'image en 
+				// DouleSide pour qu'il soit affiché à l'intérieur de la sphère
+				// ============================================================================
                 let backgroundGeometry = new THREE.SphereGeometry(400, segments, segments);
                 let backgroundMaterial = new THREE.MeshPhongMaterial({
                     map: THREE.ImageUtils.loadTexture('img/starB.png'),
                     transparent: true,
                     side: THREE.DoubleSide
                 });
-
                 starBackground = new THREE.Mesh(backgroundGeometry,backgroundMaterial);
                 starBackground.rotation.y = Math.PI;
+				// ============================================================================
 
                 // create a container node and add the two meshes
                 var root = new THREE.Object3D();
                 root.scale.set(2.5, 2.5, 2.5);
 
-
+				// Ajout des mesh à la scene
                 root.add(baseGlobe);
                 root.add(baseMap);
                 root.add(cloudMesh);
@@ -186,13 +215,17 @@
                 function onGlobeClick(event) {
                     // Get pointc, convert to latitude/longitude
                     var latlng = getEventCenter.call(this, event);
-                    // on recherche si on a cliquer sur un pays
+                    // on recherche si on a cliqué sur un pays
                     var country = geo.search(latlng[0], latlng[1]);
                     // si on clique sur un pays
                     if (country !== null) {
-                        console.log("Pays rencontré -> ", country.code);
+                        console.log("Pays rencontré -> ", country.code); // affichage console sympa
                     } else // si on cique en dehors du globe || n'est pas un pays
                     {
+						// relicat de code
+						// Avant, ce bout de code permettait de déplacer la caméra vers le pays selectionné
+						// Il n'a pas été retenu car il ne s'active qu'au MouseUp et entraine un déplacement
+						// de caméra à chaque mouvement de ce dernier (MouseClickHold)
                       /*
                         // Get new camera position
                         var temp = new THREE.Mesh();
@@ -217,7 +250,10 @@
                         */
                     }
                 }
-
+				
+				/**
+				 * Fonction qui est appelé au mouvement de souris
+				 */
                 function onGlobeMousemove(event) {
                     var map, material;
 
@@ -227,23 +263,29 @@
                     // Look for country at that latitude/longitude
                     var country = geo.search(latlng[0], latlng[1]);
 
+					
                     if (country !== null && country.code !== currentCountry) {
-
                         // Track the current country displayed
                         currentCountry = country.code;
 
-                        // Update the html
+                        // Update html
+						// On ajoute le nom du pays et son taux d'emission de CO²
                         d3.select("#msg").html(country.code);
                         d3.select("#data_country").html("CO² emissions (kt) " + gParsedCountryData[country.code]);
 
                         // Overlay the selected country
-                        //Il faut ici modifier la couleur lors de l'overlay
+						// On calcule la couleur du pays
                         var hexaColor = mapToHex(country.code);
+						// On va générer un canvas pour l'affichage du pays overlay
                         map = textureCache(country.code, hexaColor);
+						// Création du material
                         material = new THREE.MeshPhongMaterial({
                             map: map,
                             transparent: true
                         });
+						// tabOverlay est un tableau de 10 mesh successif tous identique à la seule
+						// exception que la sphère de projection est x+1 plus grande que la précédente
+						// ce qui permet d'avoir un rendu plus notable lors de l'extrusion d'un pays
                         if (!tabOverlay) {
                             tabOverlay = [];
                             for (var i = 0; i < 10; i++) {
@@ -258,23 +300,39 @@
                         }
                     }
                 }
+				
+				//Affectation des événements de souris
                 setEvents(camera, [baseGlobe], 'click');
                 setEvents(camera, [baseGlobe], 'mousemove', 10);
             });
 
             function animate() {
                 requestAnimationFrame(animate);
+				stats.update();
                 controls.update();
+				// Si le Mesh de nuage est généré alors on l'anime. 
+				// Sans ce IF des erreurs sont généré car la fonction animate() s'exécute avant l'initialisation complète du Mesh
                 if (typeof cloudMesh !== 'undefined' &&  typeof cloudMesh.rotation !== 'undefined' && typeof cloudMesh.rotation.y !== 'undefined'){
                     cloudMesh.rotation.y += 0.0005;
                 }
+				if (typeof starBackground !== 'undefined' &&  typeof starBackground.rotation !== 'undefined' && typeof starBackground.rotation.y !== 'undefined'){
+                    starBackground.rotation.y += 0.0005;
+                }
                 renderer.render(scene, camera);
             }
-
+			
+			/**
+			 * Fonction qui permet de calculer des proportions de nombres.
+			 * Utile lorsque l'on désire transposer un nombre compris entre deux variable dans une autre plage de nombres.
+			 */
             function map_number(n, in_min, in_max, out_min, out_max) {
                 return (n - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
             }
-
+			
+			/**
+			 * Fonction qui va retourner le code Hexadecimal de la couleur d'un pays passé un paramètre.
+			 * C'est ici que les calculs sont fait pour déterliner les couleurs.
+			 */
             function mapToHex(countryId) {
                 var countrySelected = countryId;
                 var valueCountry = gParsedCountryData[countrySelected];

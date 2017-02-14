@@ -7,7 +7,7 @@ canvas.node().getContext("webgl");
 var renderer = new THREE.WebGLRenderer({canvas: canvas.node(), antialias: true});
 
 renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+var container = document.body.appendChild(renderer.domElement);
 
  var camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 5000);
 camera.position.z = 1000;
