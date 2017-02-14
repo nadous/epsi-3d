@@ -1,0 +1,85 @@
+<html lang="en">
+<head>
+    <title> 3D Isere Weather </title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <!-- DEPENDENCIES -->
+    <script src="../three.js-master/build/three.js"></script>
+    <script src="../three.js-master/examples/js/Detector.js"></script>
+    <script src="../three.js-master/examples/js/libs/stats.min.js"></script>
+    <script src="../three.js-master/examples/js/controls/OrbitControls.js"></script>
+    <script src="../three.js-master/examples/js/loaders/OBJLoader.js"></script>
+    <script src="./js/particles/build/SPE.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="http://www.w3schools.com/lib/w3color.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!-- 3D Meteo SCRIPTS -->
+    <script src="./js/main.js"></script>
+    <script src="./js/utils.js"></script>
+    <script src="./js/particlesGeneration.js"></script>
+</head>
+<body>
+    <!-- Container for ThreeJS -->
+    <div id="container"></div>
+    <!-- Panel for Meteo Options -->
+    <div class="panel panel-primary" style="position: absolute; bottom: 0px; left: 5px; z-index: 10000; width: 300px; height: 120px;">
+      <div class="panel-heading">
+        <h3 class="panel-title">Options Meteo</h3>
+      </div>
+      <div class="panel-body">
+        <center>
+            <span class="label label-primary">Prévision</span>
+            <div style="margin-bottom: 5px;" class="btn-group dropup">
+              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Meteo <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu">
+                <li><a class="dropDownListItem" data-day="0" href="#">Actuelle</a></li>
+                <li><a class="dropDownListItem" data-day="1" href="#">1 Jour</a></li>
+                <li><a class="dropDownListItem" data-day="2" href="#">2 Jour</a></li>
+                <li><a class="dropDownListItem" data-day="3" href="#">3 Jour</a></li>
+                <li><a class="dropDownListItem" data-day="4" href="#">4 Jour</a></li>
+                <li><a class="dropDownListItem" data-day="5" href="#">5 Jour</a></li>
+              </ul>
+            </div>
+            <span class="label label-primary" id="meteoLabel">Actuelle</span>
+            </br>
+            <span class="label label-primary" style="margin-top: 5px;" id="dateLabel"></span>
+        </center>
+      </div>
+    </div>
+</body>
+</html>
+
+<script type="application/x-glsl" id="sky-vertex">
+// Inspired by StackOverflow, Skybox utilities
+varying vec2 vUV;
+
+void main() {  
+  vUV = uv;
+  vec4 pos = vec4(position, 1.0);
+  gl_Position = projectionMatrix * modelViewMatrix * pos;
+}
+</script>
+
+<script type="application/x-glsl" id="sky-fragment">
+// Inspired by StackOverflow, Skybox utilities
+uniform sampler2D texture;  
+varying vec2 vUV;
+
+void main() {  
+  vec4 sample = texture2D(texture, vUV);
+  gl_FragColor = vec4(sample.xyz, sample.w);
+}
+</script>
