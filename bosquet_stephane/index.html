@@ -53,6 +53,7 @@
         var ballMovement = new THREE.Vector2(Math.random() * .05, -0.05); // ball speed and movement
         var BALL_MAX_SPEED = .25; // the ball can't go faster than
 		var start = false;
+		var pause = false;
 		
 		// COLLISION
         var collidableMeshList = []; // the mesh that ball can collide with
@@ -106,7 +107,7 @@
             // gameControls structure
             var gameControls = function() {
                 var ballMovementOnPause;
-                var pause = false;
+                pause = false;
 
                 this.pause = function() { // pause the game
 					if(pause == false)
@@ -322,25 +323,25 @@
 			
             switch (event.keyCode) {
                 case 37: // left arrow
-					if(player.position.x > -2.5)
+					if(player.position.x > -2.5 && !pause)
 					{
 						player.position.x -= moveDistance;
 					}	
                     break;
                 case 38: // up arrow
-                    if(player.position.y < -2.5)
+                    if(player.position.y < -2.5 && !pause)
 					{
 						player.position.y += moveDistance;
 					}	
                     break;
                 case 39: // right arrow
-                    if(player.position.x < 2.5)
+                    if(player.position.x < 2.5 && !pause)
 					{
 						player.position.x += moveDistance;
 					}	
                     break;
                 case 40: // down arrow
-                   if(player.position.y > -4)
+                   if(player.position.y > -4 && !pause)
 					{
 						player.position.y -= moveDistance;
 					}	
