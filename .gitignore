@@ -1,3 +1,4 @@
-**/.idea/
+**/.git
+**/.idea
 **/node_modules
 **/three.js-master

@@ -40,17 +40,24 @@
     <script src="../../three.js-master/build/three.min.js"></script>
     <script src="../../three.js-master/examples/js/controls/OrbitControls.js"></script>
     <script src="../../three.js-master/examples/js/libs/stats.min.js"></script>
+<<<<<<< HEAD
     <script src="../../Physijs-master/physi.js"></script>
     <script src="../../leapjs-master/leap-0.6.4.js"></script>
 
+=======
+    <!-- <script src="../../Physijs-master/physi.js"></script> -->
+    <script src="../../Physijs/physi.js"></script>
+>>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
 
 
     <script type="text/javascript">
         /*
          * Configuration des dépendances
          */
-        Physijs.scripts.worker = '../../Physijs-master/physijs_worker.js';
-        Physijs.scripts.ammo = './../Physijs-master/ammo.js';
+        // Physijs.scripts.worker = '../../Physijs-master/physijs_worker.js';
+        // Physijs.scripts.ammo = './../Physijs-master/ammo.js';
+        Physijs.scripts.worker = '../../Physijs/physijs_worker.js';
+        Physijs.scripts.ammo = './../Physijs/examples/js/ammo.js';
 
         let renderer, scene, camera, controls, stats;
         let moveX = 0,
@@ -113,9 +120,12 @@
             controls.enablePan = false;
 
             // SKYBOX/FOG
-            var skyBoxGeometry = new THREE.CubeGeometry( 10000, 10000, 10000 );
-            var skyBoxMaterial = new THREE.MeshBasicMaterial( { color: 0x9999ff, side: THREE.BackSide } );
-            var skyBox = new THREE.Mesh( skyBoxGeometry, skyBoxMaterial );
+            var skyBoxGeometry = new THREE.CubeGeometry(10000, 10000, 10000);
+            var skyBoxMaterial = new THREE.MeshBasicMaterial({
+                color: 0x9999ff,
+                side: THREE.BackSide
+            });
+            var skyBox = new THREE.Mesh(skyBoxGeometry, skyBoxMaterial);
             scene.add(skyBox);
 
             document.getElementById('container').appendChild(renderer.domElement);
@@ -143,7 +153,12 @@
 
 
             stats = new Stats();
+<<<<<<< HEAD
             //container.appendChild(stats.dom);
+=======
+            container.appendChild(stats.dom);
+            // scene.add(stats);
+>>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
 
             const material = Physijs.createMaterial(new THREE.MeshLambertMaterial({
                 color: 0xff0000
@@ -189,15 +204,35 @@
 
 
 
-        function distanceVector( v1, v2 )
-        {
+        function distanceVector(v1, v2) {
             var dx = v1.x - v2.x;
             var dy = v1.y - v2.y;
             var dz = v1.z - v2.z;
 
-            return Math.sqrt( dx * dx + dy * dy + dz * dz );
+            return Math.sqrt(dx * dx + dy * dy + dz * dz);
         }
+<<<<<<< HEAD
 
+=======
+        /*
+                x
+                        :
+                        238.2584228515625
+
+                z
+                        :
+                        -61.61924743652344
+
+
+
+                x
+                        :
+                        225
+
+                z
+                        :
+                        -75*/
+>>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
         // creation du plan
         function addBoardPart(x, z, rows, cols) {
             const material = Physijs.createMaterial(new THREE.MeshLambertMaterial({
@@ -242,6 +277,7 @@
             const material = new THREE.MeshLambertMaterial({
                 color: 0xff0000,
             });
+
             finish = new Physijs.SphereMesh(
                 new THREE.SphereGeometry(10, 16, 16),
                 material, 0);
@@ -250,9 +286,12 @@
             finish.position.y = 0;
             finish.position.z = z * part_size;
 
-/*            finish.addEventListener('collision', function(object) {
-                alert('You win!');
-            });*/
+            finish.castShadow = true;
+
+            finish.addEventListener('collision', function(object) {
+                console.log('you win in listener');
+            });
+
             board.add(finish);
         }
 
@@ -270,7 +309,7 @@
             cube.receiveShadow = true;
 
             cube.position.x = x * part_size;
-            cube.position.y = (wall_height - board_height)* .5;
+            cube.position.y = (wall_height - board_height) * .5;
             cube.position.z = z * part_size;
 
             board.add(cube);
@@ -328,6 +367,7 @@
         function render() {
             requestAnimationFrame(render);
             var dist = distanceVector(ball.position, finish.position);
+<<<<<<< HEAD
             if(dist <= 22)
             {
                 console.log("You win");
@@ -335,6 +375,13 @@
                 setTimeout(location.reload(),50000);
             }
 
+=======
+
+            if (dist <= 22) {
+                console.log('you win on test');
+            }
+            
+>>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
             const current_rotation = board.rotation.clone();
 
 /*            current_rotation.x += board_rotation.x;
@@ -349,6 +396,7 @@
             board.rotation.set(current_rotation.x, 0, current_rotation.z);
             board.__dirtyRotation = true;
 
+<<<<<<< HEAD
 
 
             if (ball.position.y <= -1000 || compte == 0) {
@@ -357,6 +405,8 @@
                 location.reload();
             }
 
+=======
+>>>>>>> 467d67849a34f50a581b32554c3fb4ee2c71244a
             scene.simulate(undefined, 1);
             controls.update();
             stats.update();
