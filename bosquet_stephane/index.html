@@ -77,10 +77,10 @@
             scene = new THREE.Scene();
 
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-			camera.position.set(0, 3, 15);
+			camera.position.set(0, 2.5, 18);
 			camera.lookAt(new THREE.Vector3(0,0,0));
 
-            var ambientLight = new THREE.AmbientLight(0x404040);
+            var ambientLight = new THREE.AmbientLight(0xf0f0f0);
             scene.add(ambientLight);
 
             /*controls = new THREE.OrbitControls(camera);
@@ -108,9 +108,12 @@
                 var pause = false;
 
                 this.pause = function() { // pause the game
-                    pause = true;
-                    ballMovementOnPause = ballMovement;
-                    ballMovement = new THREE.Vector2(0, 0);
+					if(pause == false)
+					{
+						pause = true;
+						ballMovementOnPause = ballMovement;
+						ballMovement = new THREE.Vector2(0, 0);
+					}
                 };
 
                 this.resume = function() { // resume the game if it is already paused
@@ -121,8 +124,7 @@
                 };
 
                 this.restart = function() { // restart the game
-                    removeAllElement();
-                    gameElementInit();
+					location.reload();
                 };
 				
 				this.changeFPS = function(){ // switch between 30 or 60 fps mode
@@ -141,6 +143,7 @@
 			
 			clock = new THREE.Clock(true); // start the clock
 			
+			// particles
 			particleGroup = new SPE.Group({
         		texture: {
                     value: new THREE.TextureLoader().load('img/star.png')
@@ -151,35 +154,42 @@
 			initParticleEmitter(); // init emitter
 			
 			scene.add( particleGroup.mesh ); // add particles to scene
-        }
-
-
-        // initiate gameElements
-        function gameElementInit() {
+			
 			// load level OBJ
 			var objLoader = new THREE.OBJLoader();
 			objLoader.load("model/level.obj", function ( object ) {                        
 				// Load and apply texture
 				var meshMaterial = new THREE.MeshPhongMaterial({ transparent: false, map: new THREE.TextureLoader().load('./img/brick.jpg') });		
 
-				// add all walls
+				// put material on all walls
 				object.children[0].material = meshMaterial;
 				object.children[1].material = meshMaterial;
 				object.children[2].material = meshMaterial;
 				object.children[3].material = meshMaterial;
 				
-				object.scale.set(0.7,0.7,0.7);
-				collidableMeshList.push(object); // add object to collidable list
-				
+				object.scale.set(0.7,0.7,0.7); // reduce size of whole object a bit
 				scene.add(object);
+				
+				collidableMeshList.push(object.children[0]); // add object to collidable list
+				collidableMeshList.push(object.children[1]); // add object to collidable list
+				collidableMeshList.push(object.children[2]); // add object to collidable list
+				collidableMeshList.push(object.children[3]); // add object to collidable list
 			});
-
-            // BRICKS
-			var cubeGeometry = new THREE.BoxGeometry(.7, .3, .5); // instanciate geometry once as it will be the same for each cube
-			var cubeMaterial = new THREE.MeshPhongMaterial( { map: new THREE.TextureLoader().load('img/brick.jpg') } ); // instanciate material once as it will be the same for each cube
 			
-            for (var x = -3; x <= 3; x++) {
-                for (var y = 0; y < 4; y++) {	
+			// events listeners
+            window.addEventListener('resize', on_window_resize);
+            document.addEventListener('keydown', onKeyDown, false); // listen to keyboard input
+        }
+
+
+        // initiate gameElements that are unique on each game
+        function gameElementInit() {
+			// BRICKS
+			var cubeGeometry = new THREE.BoxGeometry(.9, .5, .7); // instanciate geometry once as it will be the same for each cube
+			var cubeMaterial = new THREE.MeshPhongMaterial( { map: new THREE.TextureLoader().load('img/crate.jpg') } ); // instanciate material once as it will be the same for each cube
+			
+            for (var x = -3; x <= 4; x += 1.5) {
+                for (var y = 1; y < 5; y++) {	
                     var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
                     cube.position.set(x, y, 0);
 
@@ -190,21 +200,23 @@
                     bricks.push(cube); // add cube to cube list
                 }
             }
-
-            // PLAYER
-            var geometry = new THREE.BoxGeometry(3, .25, .25);
+		
+			// PLAYER
+            var geometry = new THREE.BoxGeometry(2.5, .25, .25);
             var material = new THREE.MeshBasicMaterial({
-                color: 0xffffff
+                color: 0x909090
             });
 
             player = new THREE.Mesh(geometry, material); // init player
-            player.position.set(0, -3, 0);
             player.name = "player"; // usefull during collisions
+			
+			player.position.set(0, -3, 0);
+			
             scene.add(player);
             collidableMeshList.push(player);
 
             // BALL
-            ball = new THREE.Group();
+            ball = new THREE.Group(); // ball is composed of a sphere displayed on screen and a circle (not displayed) but used on collision detections
 
             var sphere_geometry = new THREE.SphereGeometry(0.2, 20, 20);
             var sphere_material = new THREE.MeshBasicMaterial({
@@ -212,24 +224,19 @@
             });
 
             var sphere = new THREE.Mesh(sphere_geometry, sphere_material); // init ball
-
             ball.add(sphere);
 
 			// BALL collision circle
             var circle_geometry = new THREE.CircleGeometry(.2, 12);
             var circle = new THREE.Mesh(circle_geometry);
-            circle.visible = false;
-
-            ball.add(circle);
-
-            ball.position.set(0, -1, 0);
-            scene.add(ball);
-
-			ballMovement = new THREE.Vector2(Math.random() * .05, -0.05); // ball speed and movement
 			
-			// events listeners
-            window.addEventListener('resize', on_window_resize);
-            document.addEventListener('keydown', onKeyDown, false); // listen to keyboard input
+            circle.visible = false; // do not show this circle
+            ball.add(circle);
+			
+			ball.position.set(0, -1, 0);
+			ballMovement = new THREE.Vector2(Math.random() * .05, -0.05); // ball speed and movement
+
+            scene.add(ball);
         }
 
 		// Create particle emitter
@@ -309,25 +316,25 @@
 			
             switch (event.keyCode) {
                 case 37: // left arrow
-					if(player.position.x > -3.0)
+					if(player.position.x > -2.5)
 					{
 						player.position.x -= moveDistance;
 					}	
                     break;
                 case 38: // up arrow
-                    if(player.position.y < -2)
+                    if(player.position.y < -2.5)
 					{
 						player.position.y += moveDistance;
 					}	
                     break;
                 case 39: // right arrow
-                    if(player.position.x < 3.0)
+                    if(player.position.x < 2.5)
 					{
 						player.position.x += moveDistance;
 					}	
                     break;
                 case 40: // down arrow
-                   if(player.position.y > -3.0)
+                   if(player.position.y > -4)
 					{
 						player.position.y -= moveDistance;
 					}	
@@ -343,8 +350,6 @@
                 ballMovement.x = BALL_MAX_SPEED - .001;
             if (Math.abs(ballMovement.y) > BALL_MAX_SPEED)
                 ballMovement.y = BALL_MAX_SPEED - .001;
-
-            //console.log("speed : " + Math.abs(ballMovement.x) + " ; " + Math.abs(ballMovement.y));
 
             ball.position.x += ballMovement.x;
             ball.position.y += ballMovement.y;
@@ -363,9 +368,15 @@
                 var directionVector = globalVertex.sub(ball.position);
 
                 var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
-                var collisionResults = ray.intersectObjects(collidableMeshList, true);
-                if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
+                var collisionResults = ray.intersectObjects(collidableMeshList);
+                if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) 
+				{
                     var objectCollided = collisionResults[0].object; // the collided object
+					
+					/*console.log(objectCollided.position);
+					console.log(ball.position);
+					console.log(ball.children[1].position);
+					console.log(collidableMeshList);*/
 					
                     if (objectCollided.name == "player") { // if collided object is player
                         var barSize = new THREE.Vector2(objectCollided.geometry.parameters.width, objectCollided.geometry.parameters.height);
@@ -388,22 +399,16 @@
                         gameOver(); // the game is lost when the ball touches the bottom
                     }
 					
-					if (objectCollided.name == "leftWall_leftCube") // if collided object is left wall
+					if (objectCollided.name == "leftWall_leftCube" || objectCollided.name == "rightWall_rightCube") // if collided object is left or right wall
                     {
-                        ballMovement.x = ballMovement.x * -1;
+                        ballMovement.x = ballMovement.x * -1; // revert x direction
                     }
-
-                    if (objectCollided.name == "rightWall_rightCube") // if collided object is right wall
-                    {
-                        ballMovement.x = ballMovement.x * -1;
-                    }
-
+					
                     if (objectCollided.name == "brick") { // if collided object is a brick
-
-                        if (ball.position.y < objectCollided.position.y)
-                            ballMovement.y = ballMovement.y * -1; // invert direction
-
-                        ballMovement.x = ballMovement.x * -1;
+						ballMovement.y = ballMovement.y * -1; // invert y movement
+						
+						if (ball.position.y > objectCollided.position.y)
+							ballMovement.x = ballMovement.x * -1; // invert x movement if the ball is above the brick
 
                         animateBrickDestruction(objectCollided); // sound + particles (todo)
 
@@ -413,7 +418,7 @@
                         bricks.splice(bricks.indexOf(objectCollided), 1);
                     }
 
-                    break; // if one of the vertex has collided, we know for sure that a collision is happening.
+                    return; // if one of the vertex has collided, we know for sure that a collision is happening.
                 }
             }
         }
@@ -426,21 +431,6 @@
             snd.play();
 			
 			particleGroup.triggerPoolEmitter( 1, objectCollided.position);
-        }
-
-        /*
-         * remove player, ball and bricks from scene
-         */
-        function removeAllElement() {
-            for (var i = 0; i < bricks.length; i++) {
-                scene.remove(bricks[i]);
-                delete bricks[i];
-            }
-
-            scene.remove(player);
-            scene.remove(ball);
-
-            collidableMeshList.splice(0, collidableMeshList.length);
         }
 
         /*
